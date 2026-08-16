@@ -2,6 +2,7 @@ package com.chubb.claimsmanagement.workload.controller;
 
 import com.chubb.claimsmanagement.common.api.ApiResponse;
 import com.chubb.claimsmanagement.workload.dto.WorkloadSummary;
+import com.chubb.claimsmanagement.workload.dto.LiabilityExposureResponse;
 import com.chubb.claimsmanagement.workload.service.WorkloadService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,5 +24,10 @@ public class WorkloadController {
     @GetMapping("/management/claims")
     public ResponseEntity<ApiResponse<List<WorkloadSummary>>> getWorkloadSummary() {
         return ResponseEntity.ok(ApiResponse.success(workloadService.getWorkloadSummary()));
+    }
+
+    @GetMapping("/management/liability-exposure")
+    public ResponseEntity<ApiResponse<LiabilityExposureResponse>> getLiabilityExposure() {
+        return ResponseEntity.ok(ApiResponse.success(workloadService.getLiabilityExposure()));
     }
 }
