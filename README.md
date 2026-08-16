@@ -93,7 +93,7 @@ The business process can be broken down into a few clear areas:
 - address: String
 - policyNumber: String
 
-#### ClaimHistory
+#### ClaimHistory (planned)
 - id: UUID
 - claimId: UUID
 - status: String
@@ -118,6 +118,7 @@ The business process can be broken down into a few clear areas:
 - ASSIGNED
 - ASSESSMENT_IN_PROGRESS
 - MORE_INFO_REQUESTED
+- MORE_INFO_PROVIDED
 - APPROVED
 - REJECTED
 - SETTLEMENT_IN_PROGRESS
@@ -150,23 +151,34 @@ This keeps the lifecycle readable and reflects the manual review nature of the p
 
 ## Synchronous Operations (REST APIs)
 
+The current API uses `claimNumber` and `staffNumber` at public boundaries. Internal UUIDs are retained for persistence and event correlation.
+
 ### Claimant-facing APIs
-- POST /api/v1/claims
-- GET /api/v1/claims/{claimId}
-- PUT /api/v1/claims/{claimId}
-- GET /api/v1/claims
+- `POST /api/v1/claims`
+- `GET /api/v1/claims/{claimNumber}`
+- `GET /api/v1/claims?claimantMemberNumber={memberNumber}`
+- `PUT /api/v1/claims/{claimNumber}/more-information`
 
 ### Claims assessment APIs
-- POST /api/v1/claims/{claimId}/assignments
-- POST /api/v1/claims/{claimId}/assessments
-- GET /api/v1/claims/{claimId}/assessments
-- POST /api/v1/claims/{claimId}/decisions
-- POST /api/v1/claims/{claimId}/settlements
+- `POST /api/v1/claims/{claimNumber}/assign?staffNumber={staffNumber}`
+- `POST /api/v1/claims/{claimNumber}/assessments/start?staffNumber={staffNumber}`
+- `POST /api/v1/claims/{claimNumber}/assessments`
+- `GET /api/v1/claims/{claimNumber}/assessments`
+- `GET /api/v1/assessments/{assessmentId}`
+- `PATCH /api/v1/assessments/{assessmentId}/settlement?settledAmount={amount}`
+
+### Staff and queue APIs
+- `GET /api/v1/staff`
+- `GET /api/v1/staff/{staffNumber}`
+- `GET /api/v1/staff/claims/queue`
+- `GET /api/v1/staff/{staffNumber}/claims/queue`
+- `POST /api/v1/staff/{staffNumber}/claims/queue/{claimNumber}/pickup`
+- `POST /api/v1/staff/{staffNumber}/claims/queue/{claimNumber}/requeue`
 
 ### Workload and management APIs
-- GET /api/v1/management/claims
-- GET /api/v1/management/claims?status={status}
-- GET /api/v1/staff/{staffId}/claims
+- `GET /api/v1/management/claims`
+
+The management response combines total claims, liability exposure, assignment counts, under-assessment counts, unassigned claims, outstanding claims, and per-staff workloads.
 
 These endpoints support the basic user journeys and the operational needs of claims teams and managers.
 
@@ -191,14 +203,12 @@ Examples of events:
 - SettlementStarted
 - NotificationSent
 
-These events can be published to Kafka or an equivalent messaging layer, which keeps the system decoupled and easier to extend.
+The current local implementation uses ActiveMQ/JMS. Kafka topic configuration is retained for a production deployment profile but is not the active local publisher.
 
 
-### Outbox Event Pattern for atomic DB + Kafka operations
-I am using outbox event pattern to make sure no events are lost. 
+### Outbox Event Pattern
 
-What happens if DB update is successful and kafka failed? the event will be lost. Even if we are using @Transactional in spring, it cant guarantee an atomic transaction with kafka and db. So lets go with outbox event pattern. 
-HEre we store the event in the database first and commit both tables. Once it is commited, we have the event in the db and wont be lost, We can then take a publisher to publish the event and if the publishing is successful, the event can be deleted from db, if not retry it again when the publisher is ready.
+The application uses an outbox table so database state changes and event recording commit atomically. A scheduled publisher sends pending events to JMS and records publication attempts and failures. The production upgrade is to make dispatching durable and horizontally safe with leases or row locking, exponential backoff, dead-letter handling, metrics, and operator replay controls.
 
 ```
 Database update
@@ -221,11 +231,12 @@ For this coding test, the intended stack is:
 
 This keeps the setup lightweight and quick while still allowing the application design to reflect a realistic event-driven backend.
 
-For production, the system will switch to:
-- a relational database such as PostgreSQL or MySQL,
-- a Kafka cluster for event streaming and integration,
-- Redis for caching or short-lived operational data when needed,
-- stronger observability and monitoring.
+For production, the system should use:
+- PostgreSQL or MySQL with managed backups, encryption, migrations, connection pooling, and read replicas where justified.
+- Kafka or a managed JMS broker with durable queues/topics, consumer groups, retry policies, dead-letter queues, schema compatibility, and message retention policies.
+- Redis only for cacheable, short-lived data, with explicit invalidation and failure behavior.
+- A secrets manager for database, broker, SMTP, and signing credentials.
+- A managed container or Kubernetes deployment with health probes, graceful shutdown, autoscaling, and rollback support.
 
 ## Local Access URLs
 
@@ -266,19 +277,93 @@ A sensible project structure for this backend would be:
   - configuration
   - validation utilities
 
-## Areas to Consider Further
+## Production-Grade Upgrade Roadmap
 
-The following are important to include in the design even if they are not fully implemented in the coding test:
+The following items are planned upgrades. They are intentionally listed separately from the local coding-test implementation.
 
-- Role-based access control
-- Audit logging
-- Claim search and filtering
-- Notification delivery tracking and retries
-- Handling multiple claim documents and attachments
-- Idempotent API behaviour
-- Concurrency control when claims are assigned or updated
-- Validation and domain rules for claim types
-- Dashboard metrics such as queue length, SLA breaches, and throughput
+### 1. Security and Access Control
+
+- Add OAuth2/OIDC login with JWT validation.
+- Enforce role-based authorization for claimant, claims adjuster, team lead, finance, and administrator operations.
+- Restrict actuator endpoints and Swagger UI outside local development.
+- Replace wildcard CORS with an environment-specific allowlist before production. The current `allowedOrigins("*")` setting is development-only.
+- Add rate limiting, request-size limits, security headers, CSRF policy for browser sessions, and abuse monitoring.
+- Redact personal data, email addresses, tokens, and financial details from logs.
+
+### 2. Data and Schema Hardening
+
+- Move from H2 to managed PostgreSQL or MySQL.
+- Review Flyway migrations before release; use immutable versioned migrations and never rewrite migrations already applied in shared environments.
+- Add database constraints for valid status transitions, non-negative monetary values, currency, and data ownership.
+- Store money as `DECIMAL`/`NUMERIC` with an explicit currency rather than floating-point `DOUBLE` values.
+- Add claim history/audit tables for every status, assignment, assessment, and settlement change.
+- Add document metadata and object-storage references for police reports, repair estimates, and supporting evidence.
+- Define retention, archival, deletion, and privacy rules for claimant and claim data.
+
+### 3. Workflow and Domain Integrity
+
+- Centralize and validate all legal claim status transitions.
+- Record `changedBy`, reason, source system, correlation ID, and timestamps for every transition.
+- Add idempotency keys to claim creation, information updates, assessment submission, pickup, and event consumers.
+- Add explicit assignment history and reassignment reasons.
+- Prevent duplicate assessments or conflicting decisions under concurrent requests.
+- Add SLA deadlines, priority, escalation, and workload balancing rules.
+- Add settlement, finance acknowledgement, payment, and closure workflows.
+
+### 4. Messaging and Outbox Reliability
+
+- Move production delivery from the local embedded broker to managed Kafka or durable JMS infrastructure.
+- Add an outbox lease/claim mechanism so multiple application instances cannot publish the same row concurrently.
+- Use exponential retry with a maximum attempt count and a dead-letter state.
+- Add idempotent consumers for staff queue creation, finance handoff, and customer notifications.
+- Add event schema versioning, compatibility checks, correlation IDs, causation IDs, and trace propagation.
+- Add operational endpoints or a secured admin job for replaying failed outbox events.
+- Add contract tests for every event producer and consumer.
+
+### 5. Notifications and Integrations
+
+- Replace mocked rejected-assessment email logging with a real provider integration.
+- Store notification delivery status, provider message ID, retry count, and failure reason.
+- Add email templates, localization, accessibility checks, and customer notification preferences.
+- Add SMS/push notification support where required by market.
+- Add finance and legal integration adapters with timeout, retry, reconciliation, and acknowledgement handling.
+
+### 6. API Quality
+
+- Add consistent pagination, filtering, sorting, and search for claims, assessments, queues, and workload reports.
+- Use typed request/response DTOs everywhere and avoid returning JPA entities directly.
+- Standardize error codes, validation messages, trace IDs, and RFC 7807-style problem responses.
+- Add optimistic concurrency tokens or `If-Match` handling to mutable claim operations.
+- Define API versioning and deprecation policy.
+- Keep OpenAPI examples synchronized with Flyway fixtures and validate the specification in CI.
+
+### 7. Observability and Operations
+
+- Emit structured JSON logs with correlation and trace IDs.
+- Add distributed tracing across HTTP, database, outbox, broker, finance, and notification boundaries.
+- Add metrics for queue depth, pickup latency, assessment duration, SLA breaches, outbox age, retry count, and notification success rate.
+- Add dashboards and alerts for database health, broker lag, failed events, dead letters, and elevated API errors.
+- Use readiness/liveness probes and graceful shutdown for rolling deployments.
+- Publish runbooks for replay, reconciliation, broker outages, database restore, and incident response.
+
+### 8. Testing and Delivery
+
+- Add unit tests for every domain transition and monetary calculation.
+- Add controller tests for validation, authorization, error responses, and CORS behavior.
+- Add repository and migration tests against PostgreSQL/Testcontainers.
+- Add integration tests for transactional outbox behavior and concurrent pickup.
+- Add event contract tests and notification provider tests.
+- Add API compatibility, OpenAPI linting, dependency vulnerability scanning, static analysis, and formatting checks to CI.
+- Build immutable artifacts and promote the same artifact across environments.
+
+### 9. Performance and Resilience
+
+- Replace repeated status queries with grouped database queries for larger datasets.
+- Add appropriate composite indexes after measuring production query plans.
+- Paginate outbox dispatch and queue reads.
+- Add timeouts, circuit breakers, bulkheads, and bounded thread pools around external services.
+- Test recovery from broker, database, SMTP, and downstream finance failures.
+- Define capacity targets and load-test claim submission, pickup, assessment, and workload reporting.
 
 ## Summary
 
