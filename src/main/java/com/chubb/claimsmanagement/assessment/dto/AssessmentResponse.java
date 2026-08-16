@@ -8,7 +8,7 @@ import java.util.UUID;
 public record AssessmentResponse(
         UUID id,
         String claimNumber,
-        UUID staffId,
+        String staffNumber,
         String assessmentType,
         String description,
         String details,

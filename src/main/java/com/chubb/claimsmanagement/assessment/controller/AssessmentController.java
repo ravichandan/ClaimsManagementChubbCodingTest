@@ -22,9 +22,9 @@ public class AssessmentController {
         this.assessmentService = assessmentService;
     }
 
-    @PostMapping("/claims/{claimId}/assessments")
+        @PostMapping("/claims/{claimNumber}/assessments")
     public ResponseEntity<ApiResponse<AssessmentResponse>> createAssessment(
-            @PathVariable UUID claimId,
+            @PathVariable String claimNumber,
             @Valid @RequestBody CreateAssessmentRequest request) {
         AssessmentResponse response = assessmentService.createAssessment(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -36,14 +36,14 @@ public class AssessmentController {
         return ResponseEntity.ok(ApiResponse.success(assessmentService.getAssessment(assessmentId)));
     }
 
-    @GetMapping("/claims/{claimId}/assessments")
-    public ResponseEntity<ApiResponse<List<AssessmentResponse>>> getAssessmentsByClaim(@PathVariable UUID claimId) {
-        return ResponseEntity.ok(ApiResponse.success(assessmentService.getAssessmentsByClaim(claimId)));
+    @GetMapping("/claims/{claimNumber}/assessments")
+    public ResponseEntity<ApiResponse<List<AssessmentResponse>>> getAssessmentsByClaim(@PathVariable String claimNumber) {
+        return ResponseEntity.ok(ApiResponse.success(assessmentService.getAssessmentsByClaim(claimNumber)));
     }
 
-    @GetMapping("/staff/{staffId}/assessments")
-    public ResponseEntity<ApiResponse<List<AssessmentResponse>>> getAssessmentsByStaff(@PathVariable UUID staffId) {
-        return ResponseEntity.ok(ApiResponse.success(assessmentService.getAssessmentsByStaff(staffId)));
+    @GetMapping("/staff/{staffNumber}/assessments")
+    public ResponseEntity<ApiResponse<List<AssessmentResponse>>> getAssessmentsByStaff(@PathVariable String staffNumber) {
+        return ResponseEntity.ok(ApiResponse.success(assessmentService.getAssessmentsByStaff(staffNumber)));
     }
 
     @PatchMapping("/assessments/{assessmentId}/settlement")

@@ -31,11 +31,11 @@ public class AssessmentService {
     }
 
     public AssessmentResponse createAssessment(CreateAssessmentRequest request) {
-        Claim claim = claimRepository.findById(request.claimId())
-                .orElseThrow(() -> new ResourceNotFoundException("Claim not found: " + request.claimId()));
+        Claim claim = claimRepository.findByClaimNumber(request.claimNumber())
+                .orElseThrow(() -> new ResourceNotFoundException("Claim not found: " + request.claimNumber()));
 
-        Staff staff = staffRepository.findById(request.staffId())
-                .orElseThrow(() -> new ResourceNotFoundException("Staff not found: " + request.staffId()));
+        Staff staff = staffRepository.findByStaffNumber(request.staffNumber())
+                .orElseThrow(() -> new ResourceNotFoundException("Staff not found: " + request.staffNumber()));
 
         Assessment assessment = new Assessment();
         assessment.setClaim(claim);
@@ -60,21 +60,21 @@ public class AssessmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Assessment not found: " + assessmentId));
     }
 
-    public List<AssessmentResponse> getAssessmentsByClaim(UUID claimId) {
-        claimRepository.findById(claimId)
-                .orElseThrow(() -> new ResourceNotFoundException("Claim not found: " + claimId));
+        public List<AssessmentResponse> getAssessmentsByClaim(String claimNumber) {
+                Claim claim = claimRepository.findByClaimNumber(claimNumber)
+                                .orElseThrow(() -> new ResourceNotFoundException("Claim not found: " + claimNumber));
 
-        return assessmentRepository.findByClaimId(claimId)
+                return assessmentRepository.findByClaimId(claim.getId())
                 .stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    public List<AssessmentResponse> getAssessmentsByStaff(UUID staffId) {
-        staffRepository.findById(staffId)
-                .orElseThrow(() -> new ResourceNotFoundException("Staff not found: " + staffId));
+        public List<AssessmentResponse> getAssessmentsByStaff(String staffNumber) {
+                Staff staff = staffRepository.findByStaffNumber(staffNumber)
+                                .orElseThrow(() -> new ResourceNotFoundException("Staff not found: " + staffNumber));
 
-        return assessmentRepository.findByStaffId(staffId)
+                return assessmentRepository.findByStaffId(staff.getId())
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -93,7 +93,7 @@ public class AssessmentService {
         return new AssessmentResponse(
                 assessment.getId(),
                 assessment.getClaim().getClaimNumber(),
-                assessment.getStaff().getId(),
+                assessment.getStaff().getStaffNumber(),
                 assessment.getAssessmentType(),
                 assessment.getDescription(),
                 assessment.getDetails(),

@@ -7,7 +7,9 @@ import com.chubb.claimsmanagement.claim.repository.ClaimRepository;
 import com.chubb.claimsmanagement.claimant.entity.Claimant;
 import com.chubb.claimsmanagement.claimant.repository.ClaimantRepository;
 import com.chubb.claimsmanagement.common.enums.ClaimStatus;
+import com.chubb.claimsmanagement.common.events.ClaimReadyForStaffEvent;
 import com.chubb.claimsmanagement.common.exceptions.ResourceNotFoundException;
+import com.chubb.claimsmanagement.notification.service.NotificationService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,10 +20,13 @@ public class ClaimService {
 
     private final ClaimRepository claimRepository;
     private final ClaimantRepository claimantRepository;
+    private final NotificationService notificationService;
 
-    public ClaimService(ClaimRepository claimRepository, ClaimantRepository claimantRepository) {
+    public ClaimService(ClaimRepository claimRepository, ClaimantRepository claimantRepository,
+                        NotificationService notificationService) {
         this.claimRepository = claimRepository;
         this.claimantRepository = claimantRepository;
+        this.notificationService = notificationService;
     }
 
     public ClaimResponse createClaim(CreateClaimRequest request) {
@@ -36,6 +41,8 @@ public class ClaimService {
         claim.setClaimNumber(generateClaimNumber());
 
         Claim saved = claimRepository.save(claim);
+        notificationService.publishClaimReadyForStaff(new ClaimReadyForStaffEvent(
+            saved.getId(), saved.getClaimNumber()));
         return toResponse(saved);
     }
 

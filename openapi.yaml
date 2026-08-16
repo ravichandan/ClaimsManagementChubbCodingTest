@@ -37,6 +37,8 @@ tags:
     description: Assessment and evaluation operations
   - name: Workload
     description: Workload and management operations
+  - name: Staff
+    description: Staff management and claim queue operations
 
 paths:
   /api/v1/claimants:
@@ -285,7 +287,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponseError'
 
-  /api/v1/claims/{claimId}/assign:
+  /api/v1/claims/{claimNumber}/assign:
     post:
       tags:
         - Claims
@@ -293,37 +295,33 @@ paths:
       description: Assign a claim to a staff member for processing
       operationId: assignClaim
       parameters:
-        - name: claimId
+        - name: claimNumber
           in: path
           required: true
           schema:
             type: string
-            format: uuid
-          description: Claim ID to assign
-          example: 55555555-5555-5555-5555-555555555555
-        - name: staffId
+          description: Public claim number to assign
+          example: CLM-ABC12345
+        - name: staffNumber
           in: query
           required: true
           schema:
             type: string
-            format: uuid
-          description: Staff member ID to assign the claim to
-          example: 33333333-3333-3333-3333-333333333333
+          description: Public staff number to assign the claim to
+          example: STAFF-1001
       responses:
         '200':
           description: Claim assigned successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponseClaimEntity'
+                $ref: '#/components/schemas/ApiResponseClaimResponse'
               examples:
                 default:
                   value:
                     success: true
                     data:
-                      id: 55555555-5555-5555-5555-555555555555
                       claimNumber: "CLM-ABC12345"
-                      claimantId: 11111111-1111-1111-1111-111111111111
                       claimantMemberNumber: "CM-1001"
                       claimType: MOTOR
                       status: ASSIGNED
@@ -345,7 +343,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponseError'
 
-  /api/v1/claims/{claimId}/assessments:
+  /api/v1/claims/{claimNumber}/assessments:
     post:
       tags:
         - Assessments
@@ -353,14 +351,13 @@ paths:
       description: Create an assessment for a claim to determine approval, rejection, or request for more information
       operationId: createAssessment
       parameters:
-        - name: claimId
+        - name: claimNumber
           in: path
           required: true
           schema:
             type: string
-            format: uuid
-          description: Claim ID to assess
-          example: 55555555-5555-5555-5555-555555555555
+          description: Public claim number to assess
+          example: CLM-ABC12345
       requestBody:
         required: true
         content:
@@ -370,8 +367,8 @@ paths:
             examples:
               approved:
                 value:
-                  claimId: 55555555-5555-5555-5555-555555555555
-                  staffId: 33333333-3333-3333-3333-333333333333
+                  claimNumber: CLM-ABC12345
+                  staffNumber: STAFF-1001
                   assessmentType: INITIAL_REVIEW
                   description: Initial assessment completed. Claim appears valid and within policy terms.
                   details: All documentation provided. No red flags identified.
@@ -379,8 +376,8 @@ paths:
                   result: APPROVED
               moreInfo:
                 value:
-                  claimId: 55555555-5555-5555-5555-555555555555
-                  staffId: 33333333-3333-3333-3333-333333333333
+                  claimNumber: CLM-ABC12345
+                  staffNumber: STAFF-1001
                   assessmentType: INITIAL_REVIEW
                   description: Additional information needed for approval.
                   details: Police report missing. Request copy from claimant.
@@ -400,7 +397,7 @@ paths:
                     data:
                       id: 66666666-6666-6666-6666-666666666666
                       claimNumber: "CLM-ABC12345"
-                      staffId: 33333333-3333-3333-3333-333333333333
+                      staffNumber: STAFF-1001
                       assessmentType: INITIAL_REVIEW
                       description: Initial assessment completed
                       details: All documentation provided
@@ -430,14 +427,14 @@ paths:
       description: Retrieve all assessments associated with a specific claim
       operationId: getAssessmentsByClaim
       parameters:
-        - name: claimId
+        - name: claimNumber
           in: path
           required: true
           schema:
             type: string
             format: uuid
-          description: Claim ID to retrieve assessments for
-          example: 55555555-5555-5555-5555-555555555555
+          description: Public claim number to retrieve assessments for
+          example: CLM-ABC12345
       responses:
         '200':
           description: Assessments retrieved successfully
@@ -452,7 +449,7 @@ paths:
                     data:
                       - id: 66666666-6666-6666-6666-666666666666
                         claimNumber: "CLM-ABC12345"
-                        staffId: 33333333-3333-3333-3333-333333333333
+                        staffNumber: STAFF-1001
                         assessmentType: INITIAL_REVIEW
                         description: Initial assessment completed
                         details: All documentation provided
@@ -465,6 +462,168 @@ paths:
                     timestamp: "2024-01-15T11:30:00.000Z"
         '404':
           description: Claim not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/staff:
+    get:
+      tags:
+        - Staff
+      summary: List staff members
+      description: Retrieve staff members available to process claims
+      operationId: getStaff
+      responses:
+        '200':
+          description: Staff members retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseStaffList'
+
+  /api/v1/staff/{staffNumber}:
+    get:
+      tags:
+        - Staff
+      summary: Get a staff member
+      description: Retrieve a staff member by ID
+      operationId: getStaffMember
+      parameters:
+        - name: staffNumber
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Public staff number
+      responses:
+        '200':
+          description: Staff member found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseStaff'
+        '404':
+          description: Staff member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/staff/claims/queue:
+    get:
+      tags:
+        - Staff
+      summary: Get claims available for pickup
+      description: Retrieve submitted claims waiting for a staff member to pick them up, ordered oldest first
+      operationId: getAvailableStaffClaims
+      responses:
+        '200':
+          description: Available claims retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseStaffClaimQueueList'
+
+  /api/v1/staff/{staffNumber}/claims/queue:
+    get:
+      tags:
+        - Staff
+      summary: Get claims picked up by staff
+      description: Retrieve claims currently picked up by a staff member
+      operationId: getStaffClaimQueue
+      parameters:
+        - name: staffNumber
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Public staff number
+      responses:
+        '200':
+          description: Staff queue retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseStaffClaimQueueList'
+        '404':
+          description: Staff member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/staff/{staffNumber}/claims/queue/{claimNumber}/pickup:
+    post:
+      tags:
+        - Staff
+      summary: Pick up a claim
+      description: Atomically assign an available claim to a staff member
+      operationId: pickUpClaim
+      parameters:
+        - name: staffNumber
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: claimNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Claim picked up successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseStaffClaimQueue'
+        '400':
+          description: Claim cannot be picked up or is owned by another staff member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+        '404':
+          description: Staff member or available claim not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/staff/{staffNumber}/claims/queue/{claimNumber}/requeue:
+    post:
+      tags:
+        - Staff
+      summary: Requeue a picked-up claim
+      description: Return a claim to the available queue
+      operationId: requeueClaim
+      parameters:
+        - name: staffNumber
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: claimNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Claim requeued successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseStaffClaimQueue'
+        '400':
+          description: Claim is assigned to another staff member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+        '404':
+          description: Staff member or picked-up claim not found
           content:
             application/json:
               schema:
@@ -500,7 +659,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponseError'
 
-  /api/v1/staff/{staffId}/assessments:
+  /api/v1/staff/{staffNumber}/assessments:
     get:
       tags:
         - Assessments
@@ -508,14 +667,13 @@ paths:
       description: Retrieve all assessments performed by a specific staff member
       operationId: getAssessmentsByStaff
       parameters:
-        - name: staffId
+        - name: staffNumber
           in: path
           required: true
           schema:
             type: string
-            format: uuid
-          description: Staff member ID
-          example: 33333333-3333-3333-3333-333333333333
+          description: Public staff number
+          example: STAFF-1001
       responses:
         '200':
           description: Assessments retrieved successfully
@@ -568,7 +726,7 @@ paths:
                     data:
                       id: 66666666-6666-6666-6666-666666666666
                       claimNumber: "CLM-ABC12345"
-                      staffId: 33333333-3333-3333-3333-333333333333
+                      staffNumber: STAFF-1001
                       assessmentType: INITIAL_REVIEW
                       description: Initial assessment completed
                       details: All documentation provided
@@ -846,6 +1004,117 @@ components:
           example: 15
       description: Workload summary grouped by claim status
 
+    Staff:
+      type: object
+      properties:
+        staffNumber:
+          type: string
+          description: Public staff number
+          example: STAFF-1001
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        role:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      description: Staff member who can process claims
+
+    StaffClaimQueue:
+      type: object
+      properties:
+        claimNumber:
+          type: string
+          description: Public claim number
+          example: CLM-ABC12345
+        claimantMemberNumber:
+          type: string
+        claimType:
+          $ref: '#/components/schemas/ClaimType'
+        claimStatus:
+          $ref: '#/components/schemas/ClaimStatus'
+        queueStatus:
+          type: string
+          enum:
+            - AVAILABLE
+            - PICKED_UP
+        staffNumber:
+          type: string
+          description: Public staff number of the current owner
+          example: STAFF-1001
+          nullable: true
+        queuedAt:
+          type: string
+          format: date-time
+        pickedUpAt:
+          type: string
+          format: date-time
+          nullable: true
+      description: A claim waiting for or currently assigned to a staff member
+
+    ApiResponseStaff:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Staff'
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ApiResponseStaffList:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Staff'
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ApiResponseStaffClaimQueue:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/StaffClaimQueue'
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ApiResponseStaffClaimQueueList:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffClaimQueue'
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
     ApiResponseClaimant:
       type: object
       properties:
@@ -955,23 +1224,21 @@ components:
     CreateAssessmentRequest:
       type: object
       required:
-        - claimId
-        - staffId
+        - claimNumber
+        - staffNumber
         - assessmentType
         - description
         - estimatedAmount
         - result
       properties:
-        claimId:
+        claimNumber:
           type: string
-          format: uuid
-          description: UUID of the claim being assessed
-          example: 55555555-5555-5555-5555-555555555555
-        staffId:
+          description: Public claim number being assessed
+          example: CLM-ABC12345
+        staffNumber:
           type: string
-          format: uuid
-          description: UUID of the staff member performing the assessment
-          example: 33333333-3333-3333-3333-333333333333
+          description: Public staff number of the assessor
+          example: STAFF-1001
         assessmentType:
           type: string
           minLength: 1
@@ -1007,11 +1274,10 @@ components:
           type: string
           description: Claim number associated with this assessment
           example: "CLM-ABC12345"
-        staffId:
+        staffNumber:
           type: string
-          format: uuid
-          description: UUID of the staff member who performed the assessment
-          example: 33333333-3333-3333-3333-333333333333
+          description: Public staff number of the assessor
+          example: STAFF-1001
         assessmentType:
           type: string
           description: Type of assessment

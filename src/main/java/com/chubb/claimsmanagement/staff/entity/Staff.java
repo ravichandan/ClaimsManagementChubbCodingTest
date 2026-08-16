@@ -21,6 +21,9 @@ public class Staff {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(nullable = false, unique = true)
+    private String staffNumber;
+
     @Column(nullable = false)
     private String firstName;
 
