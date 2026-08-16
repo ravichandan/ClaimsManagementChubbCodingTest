@@ -29,7 +29,7 @@ Claimants need to be able to some actions. lets break it down
 - receive decisions -> may be a email/sms notification?
 
 Claims staff need to be able to some actions. lets break it down 
-- pickup incoming claims -> means there is a list of 'pending' claims and an officer should be able to assign to themselves. So a potential 'queue' where incoming claims are stored and a rest endpoint like POST /claims/claimId/assignments
+- pickup incoming claims -> means there is a list of 'pending' claims and an officer should be able to assign to themselves. So a potential 'queue' where incoming claims are stored and also a rest endpoint like POST /claims/assignments to assign to a staff manually
 - review and assess them -> May be a set of business rules and validations to be performed. means they could also changes to rules and validations based on customers, so need to keep them devoupled. also mostly 'assess' means a manual task, so when it is done, they put the result in a different queue for next process. 
 - progress claims to settlement or rejection - means when a settlement is progressed, it is sent to finance team to do the finance & legal transactions and also notify customer in email. same thing for rejection also but no finance team involved. If in case finance and legal teams are to be notified, again we expect an endpoint or queue, based on async or sync decisions. I think as the customer dont see this, there could be async process but again need to check with business about the ETAs.
 - see their team's workload and performance -> means a manager or admin can have a UI dashboard to see the # of claims and their statuses. So endpoints for this GET /api/v1/management/claims gives all the claims and statuses, etc.
@@ -93,12 +93,30 @@ REJECTED PATH:
 SUBMITTED->ASSIGNED->ASSEMENT_INPROGRESS->REJECTED
 
 
+### Sync operations (REST Endpoints)
+<p>POST /api/v1/claims</p>
+<p>GET  /api/v1/claims/{claimId}</p>
+<p>PUT /api/v1/claims/{claimId}
+
+<p>POST /api/v1/claims/{claimId}/assessments</p>
+<p>GET  /api/v1/claims/{claimId}/assessments</p>
 
 
+For Workload
+<p>GET /api/v1/management/claims/p>
+<p>GET /api/v1/management/claims/p>
+<p>GET /api/v1/staff/{staffId}/claims</p>
+
+
+#### Async operations
+- Assigning a Submitted claim
+- Assigning a 'MORE_INFO_REQUESTED' claim
+- Notification (Email/sms) to Customer for 'MORE_INFO_REQUESTED/APPROVED/REJECTED/SETTLED' claims
+- Notification to finance & legal teams
 
 
 I am using the following stack - Java with SPring boot 
 
-## Brain storming and decision making
+## 
 
 ##
