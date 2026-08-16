@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/** Persistence and locked lookup operations for staff queue entries. */
 public interface StaffClaimQueueRepository extends JpaRepository<StaffClaimQueue, UUID> {
     Optional<StaffClaimQueue> findByClaimId(UUID claimId);
 

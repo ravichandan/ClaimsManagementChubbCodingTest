@@ -18,12 +18,17 @@ import com.chubb.claimsmanagement.staff.entity.Staff;
 import com.chubb.claimsmanagement.staff.repository.StaffRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.UUID;
 
 @Service
+/** Coordinates assessment persistence, claim decisions, and downstream events. */
 public class AssessmentService {
+
+    private static final Logger log = LoggerFactory.getLogger(AssessmentService.class);
 
     private final AssessmentRepository assessmentRepository;
     private final ClaimRepository claimRepository;
@@ -41,6 +46,7 @@ public class AssessmentService {
     }
 
     @Transactional
+    /** Saves an assessment and routes its result to the next workflow queue. */
     public AssessmentResponse createAssessment(CreateAssessmentRequest request) {
         Claim claim = claimRepository.findByClaimNumber(request.claimNumber())
                 .orElseThrow(() -> new ResourceNotFoundException("Claim not found: " + request.claimNumber()));
@@ -61,6 +67,7 @@ public class AssessmentService {
         claimRepository.save(claim);
 
         Assessment saved = assessmentRepository.save(assessment);
+        log.info("Assessment {} completed for claim {} with result {}", saved.getId(), claim.getClaimNumber(), request.result());
         if (request.result() == AssessmentResult.APPROVED) {
             notificationService.publishAssessmentApproved(new AssessmentApprovedEvent(
                 saved.getId(),
@@ -85,6 +92,7 @@ public class AssessmentService {
     }
 
     public ClaimResponse startAssessment(String claimNumber, String staffNumber) {
+        log.info("Starting assessment for claim {} by staff {}", claimNumber, staffNumber);
         Claim claim = claimRepository.findByClaimNumber(claimNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Claim not found: " + claimNumber));
 
@@ -128,6 +136,7 @@ public class AssessmentService {
     }
 
     public AssessmentResponse updateSettledAmount(UUID assessmentId, Double settledAmount) {
+        log.info("Updating settled amount for assessment {}", assessmentId);
         Assessment assessment = assessmentRepository.findById(assessmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Assessment not found: " + assessmentId));
 

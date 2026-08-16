@@ -8,6 +8,7 @@ import org.springframework.kafka.config.TopicBuilder;
 
 @Configuration
 @Profile("kafka")
+/** Declares optional Kafka topics for production-style deployments. */
 public class KafkaConfig {
 
     @Bean

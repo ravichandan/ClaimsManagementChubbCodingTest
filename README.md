@@ -28,6 +28,36 @@ The frontend is out of scope. The assessment focuses on the backend structure, d
 
 ## Architecture
 
+### Current API and Workflow Notes
+
+The public API uses business identifiers where possible:
+
+- `claimNumber` identifies claims in claimant, staff, assessment, and workload flows.
+- `staffNumber` identifies staff members in public endpoints.
+- Internal UUIDs remain persistence and event-correlation identifiers.
+
+Important workflow endpoints include:
+
+- `POST /api/v1/claims` submits a claim for staff intake.
+- `POST /api/v1/staff/{staffNumber}/claims/queue/{claimNumber}/pickup` assigns a queued claim.
+- `POST /api/v1/claims/{claimNumber}/assessments/start` starts staff assessment.
+- `POST /api/v1/claims/{claimNumber}/assessments` records the assessment result.
+- `PUT /api/v1/claims/{claimNumber}/more-information` accepts claimant information requested by staff.
+- `GET /api/v1/management/claims` returns status counts, claim numbers by status, and staff assignments.
+- `GET /api/v1/management/liability-exposure` reports requested, approved, and outstanding amounts.
+
+### Observability and Communication
+
+Application services log workflow transitions using claim numbers, staff numbers, assessment IDs, and outbox IDs. Sensitive claimant descriptions and email content are not written to logs.
+
+All asynchronous domain events use the transactional outbox pattern:
+
+1. The domain update and outbox row are committed in one database transaction.
+2. The scheduled outbox publisher sends pending events to ActiveMQ.
+3. Successful events are marked `PUBLISHED`; failed events retain retry metadata.
+
+The current event destinations are `staff-claim-queue`, `finance-team-queue`, and `assessment-rejected-queue`. Rejected-assessment email delivery is represented by a listener and currently mocked with a log statement for local development.
+
 ### Assumptions, Constraints, Brainstorming, and Decisions
 
 The business process can be broken down into a few clear areas:

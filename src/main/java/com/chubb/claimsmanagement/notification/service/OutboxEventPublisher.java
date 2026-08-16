@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @Component
+/** Periodically publishes pending outbox rows to their configured JMS destinations. */
 public class OutboxEventPublisher {
 
     private static final Logger log = LoggerFactory.getLogger(OutboxEventPublisher.class);
@@ -44,6 +45,7 @@ public class OutboxEventPublisher {
 
     @Scheduled(fixedDelayString = "${outbox.publisher.fixed-delay-ms:1000}")
     @Transactional
+    /** Publishes a bounded batch and records success or retry metadata per event. */
     public void publishPendingEvents() {
         for (OutboxEvent event : outboxEventRepository.findTop100ByStatusOrderByCreatedAtAsc(OutboxStatus.PENDING)) {
             try {
@@ -53,6 +55,7 @@ public class OutboxEventPublisher {
                 }
                 Object payload = objectMapper.readValue(event.getPayload(), eventClass);
                 jmsTemplate.convertAndSend(event.getDestination(), payload);
+                log.info("Published outbox event {} to {}", event.getId(), event.getDestination());
                 event.setStatus(OutboxStatus.PUBLISHED);
                 event.setPublishedAt(LocalDateTime.now());
                 event.setAttempts(event.getAttempts() + 1);

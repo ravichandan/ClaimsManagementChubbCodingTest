@@ -15,6 +15,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1")
+/** REST endpoints for assessment creation, review, and settlement updates. */
 public class AssessmentController {
 
     private final AssessmentService assessmentService;
@@ -24,6 +25,7 @@ public class AssessmentController {
     }
 
     @PostMapping("/claims/{claimNumber}/assessments/start")
+    /** Marks an assigned claim as actively being assessed by staff. */
     public ResponseEntity<ApiResponse<ClaimResponse>> startAssessment(
             @PathVariable String claimNumber, @RequestParam String staffNumber) {
         return ResponseEntity.ok(ApiResponse.success(
@@ -32,6 +34,7 @@ public class AssessmentController {
     }
 
     @PostMapping("/claims/{claimNumber}/assessments")
+    /** Records an assessment result and applies the corresponding claim status. */
     public ResponseEntity<ApiResponse<AssessmentResponse>> createAssessment(
             @PathVariable String claimNumber,
             @Valid @RequestBody CreateAssessmentRequest request) {
@@ -41,21 +44,25 @@ public class AssessmentController {
     }
 
     @GetMapping("/assessments/{assessmentId}")
+    /** Retrieves an assessment by its internal identifier. */
     public ResponseEntity<ApiResponse<AssessmentResponse>> getAssessment(@PathVariable UUID assessmentId) {
         return ResponseEntity.ok(ApiResponse.success(assessmentService.getAssessment(assessmentId)));
     }
 
     @GetMapping("/claims/{claimNumber}/assessments")
+    /** Lists assessments for a public claim number. */
     public ResponseEntity<ApiResponse<List<AssessmentResponse>>> getAssessmentsByClaim(@PathVariable String claimNumber) {
         return ResponseEntity.ok(ApiResponse.success(assessmentService.getAssessmentsByClaim(claimNumber)));
     }
 
     @GetMapping("/staff/{staffNumber}/assessments")
+    /** Lists assessments performed by a staff business number. */
     public ResponseEntity<ApiResponse<List<AssessmentResponse>>> getAssessmentsByStaff(@PathVariable String staffNumber) {
         return ResponseEntity.ok(ApiResponse.success(assessmentService.getAssessmentsByStaff(staffNumber)));
     }
 
     @PatchMapping("/assessments/{assessmentId}/settlement")
+    /** Updates the settled amount recorded for an assessment. */
     public ResponseEntity<ApiResponse<AssessmentResponse>> updateSettledAmount(
             @PathVariable UUID assessmentId,
             @RequestParam Double settledAmount) {

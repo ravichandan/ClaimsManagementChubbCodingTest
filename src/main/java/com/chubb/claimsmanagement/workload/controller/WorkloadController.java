@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1")
+/** Management endpoints for operational workload and liability reporting. */
 public class WorkloadController {
 
     private final WorkloadService workloadService;
@@ -20,11 +21,13 @@ public class WorkloadController {
     }
 
     @GetMapping("/management/claims")
+    /** Returns claim status counts and staff assignment details. */
     public ResponseEntity<ApiResponse<WorkloadSummaryResponse>> getWorkloadSummary() {
         return ResponseEntity.ok(ApiResponse.success(workloadService.getWorkloadSummary()));
     }
 
     @GetMapping("/management/liability-exposure")
+    /** Returns requested, approved, and outstanding liability totals. */
     public ResponseEntity<ApiResponse<LiabilityExposureResponse>> getLiabilityExposure() {
         return ResponseEntity.ok(ApiResponse.success(workloadService.getLiabilityExposure()));
     }

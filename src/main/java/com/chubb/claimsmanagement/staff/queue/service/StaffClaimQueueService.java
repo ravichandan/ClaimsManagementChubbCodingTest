@@ -13,13 +13,18 @@ import com.chubb.claimsmanagement.staff.queue.repository.StaffClaimQueueReposito
 import com.chubb.claimsmanagement.staff.repository.StaffRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 @Service
+/** Manages durable staff claim queue state and pickup transitions. */
 public class StaffClaimQueueService {
+
+    private static final Logger log = LoggerFactory.getLogger(StaffClaimQueueService.class);
 
     private final StaffClaimQueueRepository queueRepository;
     private final ClaimRepository claimRepository;
@@ -34,6 +39,7 @@ public class StaffClaimQueueService {
     }
 
     @Transactional
+    /** Creates an available queue entry once for a newly submitted claim. */
     public void enqueue(UUID claimId) {
         if (queueRepository.findByClaimId(claimId).isPresent()) {
             return;
@@ -61,6 +67,7 @@ public class StaffClaimQueueService {
     }
 
     @Transactional
+    /** Makes a picked-up claim available again after claimant information arrives. */
     public void makeAvailableAfterMoreInformation(UUID claimId) {
         StaffClaimQueue queue = queueRepository.findByClaimIdAndStatusForUpdate(claimId, QueueStatus.PICKED_UP)
                 .orElseThrow(() -> new ResourceNotFoundException("Picked up claim not found: " + claimId));
@@ -69,9 +76,11 @@ public class StaffClaimQueueService {
         queue.setStatus(QueueStatus.AVAILABLE);
         queue.setPickedUpAt(null);
         queueRepository.save(queue);
+        log.info("Claim {} returned to the available staff queue", queue.getClaim().getClaimNumber());
     }
 
     @Transactional
+    /** Assigns an available claim to a staff member under a row lock. */
     public StaffClaimQueueResponse pickUpClaim(String claimNumber, String staffNumber) {
         Staff staff = requireStaff(staffNumber);
         Claim claim = requireClaim(claimNumber);
@@ -89,10 +98,12 @@ public class StaffClaimQueueService {
         queue.setPickedUpAt(LocalDateTime.now());
         claim.setStatus(ClaimStatus.ASSIGNED);
         claimRepository.save(claim);
+        log.info("Claim {} picked up by staff {}", claimNumber, staffNumber);
         return toResponse(queueRepository.save(queue));
     }
 
     @Transactional
+    /** Requeues a claim only when the requesting staff member owns it. */
     public StaffClaimQueueResponse requeueClaim(String claimNumber, String staffNumber) {
         Staff staff = requireStaff(staffNumber);
         Claim claim = requireClaim(claimNumber);
@@ -108,6 +119,7 @@ public class StaffClaimQueueService {
         queue.setPickedUpAt(null);
         queue.getClaim().setStatus(ClaimStatus.SUBMITTED);
         claimRepository.save(queue.getClaim());
+        log.info("Claim {} requeued by staff {}", claimNumber, staffNumber);
         return toResponse(queueRepository.save(queue));
     }
 

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/** Persistence queries for claim assessments and staff assessment history. */
 public interface AssessmentRepository extends JpaRepository<Assessment, UUID> {
     List<Assessment> findByClaimId(UUID claimId);
     List<Assessment> findByStaffId(UUID staffId);

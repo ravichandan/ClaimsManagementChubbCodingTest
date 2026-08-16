@@ -27,6 +27,7 @@ public class AssessmentRejectedEmailListener {
     }
 
     @JmsListener(destination = "assessment-rejected-queue")
+    /** Consumes a rejection event and performs the current mocked email notification. */
     public void handle(AssessmentRejectedEvent event) {
         // Mock email delivery until the mail provider and credentials are configured.
         log.info("Sent {} email for claim {} to {}", event.result(), event.claimNumber(), event.claimantEmail());

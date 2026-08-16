@@ -8,9 +8,14 @@ import com.chubb.claimsmanagement.common.exceptions.BadRequestException;
 import com.chubb.claimsmanagement.common.exceptions.ResourceNotFoundException;
 import com.chubb.claimsmanagement.staff.repository.StaffRepository;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
+/** Applies validated claim lifecycle transitions. */
 public class ClaimLifecycleService {
+
+    private static final Logger log = LoggerFactory.getLogger(ClaimLifecycleService.class);
 
     private final ClaimRepository claimRepository;
     private final StaffRepository staffRepository;
@@ -21,6 +26,7 @@ public class ClaimLifecycleService {
     }
 
         public ClaimResponse assignClaim(String claimNumber, String staffNumber) {
+            log.info("Assigning claim {} to staff {}", claimNumber, staffNumber);
         staffRepository.findByStaffNumber(staffNumber)
             .orElseThrow(() -> new ResourceNotFoundException("Staff not found: " + staffNumber));
         Claim claim = claimRepository.findByClaimNumber(claimNumber)

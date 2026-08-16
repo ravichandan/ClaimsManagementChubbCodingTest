@@ -13,6 +13,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
+/** Durable serialized event awaiting asynchronous publication. */
 public class OutboxEvent {
 
     @Id

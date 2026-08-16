@@ -1,5 +1,6 @@
 package com.chubb.claimsmanagement.common.enums;
 
+/** Lifecycle states used by the claim workflow. */
 public enum ClaimStatus {
     SUBMITTED,
     ASSIGNED,

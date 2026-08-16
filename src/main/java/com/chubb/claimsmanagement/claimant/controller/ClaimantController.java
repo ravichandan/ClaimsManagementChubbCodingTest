@@ -13,6 +13,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1")
+/** REST endpoints for claimant creation and lookup. */
 public class ClaimantController {
 
     private final ClaimantService claimantService;
@@ -22,6 +23,7 @@ public class ClaimantController {
     }
 
     @PostMapping("/claimants")
+    /** Registers a claimant profile. */
     public ResponseEntity<ApiResponse<Claimant>> createClaimant(@Valid @RequestBody CreateClaimantRequest request) {
         Claimant claimant = claimantService.createClaimant(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -29,6 +31,7 @@ public class ClaimantController {
     }
 
     @GetMapping("/claimants/{id}")
+    /** Retrieves a claimant by internal identifier. */
     public ResponseEntity<ApiResponse<Claimant>> getClaimant(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(claimantService.getClaimant(id)));
     }

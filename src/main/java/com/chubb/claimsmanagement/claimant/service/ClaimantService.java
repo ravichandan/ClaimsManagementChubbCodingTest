@@ -5,11 +5,16 @@ import com.chubb.claimsmanagement.claimant.entity.Claimant;
 import com.chubb.claimsmanagement.claimant.repository.ClaimantRepository;
 import com.chubb.claimsmanagement.common.exceptions.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
 @Service
+/** Coordinates claimant profile persistence and lookup operations. */
 public class ClaimantService {
+
+    private static final Logger log = LoggerFactory.getLogger(ClaimantService.class);
 
     private final ClaimantRepository claimantRepository;
 
@@ -18,6 +23,7 @@ public class ClaimantService {
     }
 
     public Claimant createClaimant(CreateClaimantRequest request) {
+        log.info("Creating claimant with member number {}", request.claimantMemberNumber());
         Claimant claimant = new Claimant();
         claimant.setClaimantMemberNumber(request.claimantMemberNumber());
         claimant.setFirstName(request.firstName());

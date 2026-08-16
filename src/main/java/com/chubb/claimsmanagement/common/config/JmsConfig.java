@@ -7,5 +7,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Configuration
 @EnableJms
 @EnableScheduling
+/** Enables JMS listeners and scheduled outbox dispatching. */
 public class JmsConfig {
 }

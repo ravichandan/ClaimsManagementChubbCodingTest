@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1")
+/** REST endpoints for explicit claim lifecycle transitions. */
 public class ClaimLifecycleController {
 
     private final ClaimLifecycleService claimLifecycleService;
@@ -17,6 +18,7 @@ public class ClaimLifecycleController {
     }
 
     @PostMapping("/claims/{claimNumber}/assign")
+    /** Assigns a claim to a staff member using public business identifiers. */
     public ResponseEntity<ApiResponse<ClaimResponse>> assignClaim(
             @PathVariable String claimNumber, @RequestParam String staffNumber) {
         return ResponseEntity.ok(ApiResponse.success(

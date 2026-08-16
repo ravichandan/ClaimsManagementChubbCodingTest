@@ -15,6 +15,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
+/** Durable queue ownership record for a claim awaiting staff processing. */
 public class StaffClaimQueue {
 
     @Id

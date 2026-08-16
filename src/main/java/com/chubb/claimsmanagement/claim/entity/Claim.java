@@ -18,6 +18,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+/** Persistent claim aggregate and its lifecycle timestamps. */
 public class Claim {
 
     @Id

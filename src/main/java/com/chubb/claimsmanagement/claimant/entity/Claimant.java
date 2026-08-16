@@ -17,6 +17,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+/** Persistent claimant profile and its claim relationship. */
 public class Claimant {
 
     @Id

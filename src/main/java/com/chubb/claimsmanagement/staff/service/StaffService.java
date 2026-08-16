@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+/** Provides staff lookup operations for public API boundaries. */
 public class StaffService {
 
     private final StaffRepository staffRepository;

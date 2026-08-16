@@ -16,13 +16,18 @@ import com.chubb.claimsmanagement.staff.queue.entity.QueueStatus;
 import com.chubb.claimsmanagement.staff.queue.entity.StaffClaimQueue;
 import com.chubb.claimsmanagement.staff.queue.repository.StaffClaimQueueRepository;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
 @Service
+/** Builds operational workload summaries from claims, assessments, and queues. */
 public class WorkloadService {
+
+        private static final Logger log = LoggerFactory.getLogger(WorkloadService.class);
 
     private final ClaimRepository claimRepository;
     private final AssessmentRepository assessmentRepository;
@@ -40,6 +45,7 @@ public class WorkloadService {
     }
 
     public WorkloadSummaryResponse getWorkloadSummary() {
+                log.debug("Building workload status and staff assignment summary");
         List<WorkloadSummary> statusSummary = Arrays.stream(ClaimStatus.values())
                 .map(status -> {
                     List<String> claimNumbers = claimRepository.findByStatus(status).stream()
@@ -67,6 +73,7 @@ public class WorkloadService {
     }
 
     public LiabilityExposureResponse getLiabilityExposure() {
+                log.debug("Calculating outstanding liability exposure");
         List<Assessment> assessments = assessmentRepository.findAll();
         BigDecimal totalRequestedAmount = assessments.stream()
                 .map(Assessment::getEstimatedAmount)

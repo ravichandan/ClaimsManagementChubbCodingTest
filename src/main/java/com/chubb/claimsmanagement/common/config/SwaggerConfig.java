@@ -13,14 +13,17 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import java.util.List;
 
 @Configuration
+/** Configures the generated OpenAPI metadata and shared JSON mapper. */
 public class SwaggerConfig {
 
     @Bean
+        /** Creates the JSON mapper used by Spring MVC and event serialization. */
     public ObjectMapper objectMapper() {
         return Jackson2ObjectMapperBuilder.json().build();
     }
 
     @Bean
+        /** Defines API title, contact, license, and server metadata. */
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()

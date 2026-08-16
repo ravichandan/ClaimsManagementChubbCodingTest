@@ -18,6 +18,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+/** Persistent assessment record linking a claim to the reviewing staff member. */
 public class Assessment {
 
     @Id

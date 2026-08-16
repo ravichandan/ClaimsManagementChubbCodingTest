@@ -15,6 +15,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+/** Persistent staff member and public staff-number mapping. */
 public class Staff {
 
     @Id

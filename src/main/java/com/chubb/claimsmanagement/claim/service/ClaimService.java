@@ -15,12 +15,17 @@ import com.chubb.claimsmanagement.notification.service.NotificationService;
 import com.chubb.claimsmanagement.staff.queue.service.StaffClaimQueueService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.UUID;
 
 @Service
+/** Coordinates claim persistence and claim-related workflow events. */
 public class ClaimService {
+
+    private static final Logger log = LoggerFactory.getLogger(ClaimService.class);
 
     private final ClaimRepository claimRepository;
     private final ClaimantRepository claimantRepository;
@@ -37,7 +42,9 @@ public class ClaimService {
     }
 
     @Transactional
+    /** Creates a submitted claim and records its staff-queue event transactionally. */
     public ClaimResponse createClaim(CreateClaimRequest request) {
+        log.info("Creating claim for claimant member {}", request.claimantMemberNumber());
         Claimant claimant = claimantRepository.findByClaimantMemberNumber(request.claimantMemberNumber())
                 .orElseThrow(() -> new ResourceNotFoundException("Claimant not found: " + request.claimantMemberNumber()));
 
@@ -67,6 +74,7 @@ public class ClaimService {
     }
 
     @Transactional
+    /** Updates claimant information and reopens the existing staff queue entry. */
     public ClaimResponse updateClaimInformation(String claimNumber, UpdateClaimInformationRequest request) {
         Claim claim = claimRepository.findByClaimNumber(claimNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Claim not found: " + claimNumber));
@@ -78,6 +86,7 @@ public class ClaimService {
         claim.setDescription(request.description());
         claim.setStatus(ClaimStatus.MORE_INFO_PROVIDED);
         Claim saved = claimRepository.save(claim);
+        log.info("Claim {} received additional information and is returning to the staff queue", claimNumber);
         staffClaimQueueService.makeAvailableAfterMoreInformation(saved.getId());
         return toResponse(saved);
     }

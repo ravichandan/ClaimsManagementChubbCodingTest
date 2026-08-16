@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+/** Serializes domain events and persists them with the current database transaction. */
 public class OutboxEventService {
 
     private final OutboxEventRepository outboxEventRepository;
@@ -19,6 +20,7 @@ public class OutboxEventService {
     }
 
     @Transactional
+    /** Adds a pending event to the outbox without publishing it directly. */
     public void enqueue(String destination, Object event) {
         OutboxEvent outboxEvent = new OutboxEvent();
         outboxEvent.setEventType(event.getClass().getName());

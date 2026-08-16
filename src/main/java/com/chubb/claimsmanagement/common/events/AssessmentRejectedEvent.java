@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import com.chubb.claimsmanagement.common.enums.AssessmentResult;
 
+/** Event routed to claimant notification after an assessment decision. */
 public record AssessmentRejectedEvent(
         UUID assessmentId,
         UUID claimId,

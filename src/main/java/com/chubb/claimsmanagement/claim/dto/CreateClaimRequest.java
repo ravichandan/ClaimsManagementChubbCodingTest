@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 
+/** Payload used to submit a new claim. */
 public record CreateClaimRequest(
         @NotBlank String claimantMemberNumber,
         @NotNull ClaimType claimType,
