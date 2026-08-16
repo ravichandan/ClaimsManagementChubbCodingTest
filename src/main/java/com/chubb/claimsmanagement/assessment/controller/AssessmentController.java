@@ -3,6 +3,7 @@ package com.chubb.claimsmanagement.assessment.controller;
 import com.chubb.claimsmanagement.assessment.dto.AssessmentResponse;
 import com.chubb.claimsmanagement.assessment.dto.CreateAssessmentRequest;
 import com.chubb.claimsmanagement.assessment.service.AssessmentService;
+import com.chubb.claimsmanagement.claim.dto.ClaimResponse;
 import com.chubb.claimsmanagement.common.api.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -22,7 +23,15 @@ public class AssessmentController {
         this.assessmentService = assessmentService;
     }
 
-        @PostMapping("/claims/{claimNumber}/assessments")
+    @PostMapping("/claims/{claimNumber}/assessments/start")
+    public ResponseEntity<ApiResponse<ClaimResponse>> startAssessment(
+            @PathVariable String claimNumber, @RequestParam String staffNumber) {
+        return ResponseEntity.ok(ApiResponse.success(
+                assessmentService.startAssessment(claimNumber, staffNumber),
+                "Assessment started successfully"));
+    }
+
+    @PostMapping("/claims/{claimNumber}/assessments")
     public ResponseEntity<ApiResponse<AssessmentResponse>> createAssessment(
             @PathVariable String claimNumber,
             @Valid @RequestBody CreateAssessmentRequest request) {

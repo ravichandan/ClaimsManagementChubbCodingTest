@@ -224,17 +224,10 @@ paths:
                       - claimNumber: "CLM-ABC12345"
                         claimantMemberNumber: "CM-1001"
                         claimType: MOTOR
-                        status: SUBMITTED
+                        status: APPROVED
                         description: Car accident on Main Street
                         createdAt: "2024-01-15T10:30:00"
-                        updatedAt: "2024-01-15T10:30:00"
-                      - claimNumber: "CLM-DEF67890"
-                        claimantMemberNumber: "CM-1001"
-                        claimType: PROPERTY
-                        status: ASSIGNED
-                        description: Water damage to kitchen
-                        createdAt: "2024-01-14T15:45:00"
-                        updatedAt: "2024-01-15T09:00:00"
+                        updatedAt: "2024-01-15T12:15:00"
                     message: OK
                     timestamp: "2024-01-15T10:30:00.000Z"
         '400':
@@ -332,6 +325,62 @@ paths:
                     timestamp: "2024-01-15T11:00:00.000Z"
         '400':
           description: Invalid state or request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+        '404':
+          description: Claim or staff member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/claims/{claimNumber}/assessments/start:
+    post:
+      tags:
+        - Assessments
+      summary: Start an assessment
+      description: Mark an assigned claim as being assessed by a staff member
+      operationId: startAssessment
+      parameters:
+        - name: claimNumber
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Public claim number to start assessing
+          example: CLM-ABC12345
+        - name: staffNumber
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Public staff number starting the assessment
+          example: STAFF-1001
+      responses:
+        '200':
+          description: Assessment started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseClaimResponse'
+              examples:
+                default:
+                  value:
+                    success: true
+                    data:
+                      claimNumber: "CLM-ABC12345"
+                      claimantMemberNumber: "CM-1001"
+                      claimType: MOTOR
+                      status: ASSESSMENT_IN_PROGRESS
+                      description: Car accident on Main Street involving two vehicles
+                      createdAt: "2024-01-15T10:30:00"
+                      updatedAt: "2024-01-15T11:15:00"
+                    message: Assessment started successfully
+                    timestamp: "2024-01-15T11:15:00.000Z"
+        '400':
+          description: Claim is not ready for assessment
           content:
             application/json:
               schema:
@@ -888,7 +937,7 @@ components:
           type: string
           minLength: 1
           description: Detailed description of the claim
-          example: "Car accident on Main Street involving two vehicles. Police report filed."
+          example: "Car accident on Main Street involving two vehicles"
       description: Request payload for creating a new claim
 
     ClaimResponse:
@@ -1248,7 +1297,7 @@ components:
           type: string
           minLength: 1
           description: Description of the assessment findings
-          example: "Initial assessment completed. Claim appears valid."
+          example: "Initial assessment completed. Claim is valid and within policy terms."
         details:
           type: string
           description: Additional detailed notes on the assessment
@@ -1285,11 +1334,11 @@ components:
         description:
           type: string
           description: Description of the assessment findings
-          example: "Initial assessment completed"
+          example: "Initial assessment completed. Claim is valid and within policy terms."
         details:
           type: string
           description: Detailed notes on the assessment
-          example: "All documentation provided"
+          example: "All documentation provided. No red flags identified."
         estimatedAmount:
           type: number
           format: double
