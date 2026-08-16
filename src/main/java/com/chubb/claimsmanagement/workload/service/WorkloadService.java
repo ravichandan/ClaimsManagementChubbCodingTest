@@ -5,10 +5,7 @@ import com.chubb.claimsmanagement.assessment.repository.AssessmentRepository;
 import com.chubb.claimsmanagement.claim.repository.ClaimRepository;
 import com.chubb.claimsmanagement.common.enums.AssessmentResult;
 import com.chubb.claimsmanagement.common.enums.ClaimStatus;
-import com.chubb.claimsmanagement.workload.dto.LiabilityExposureResponse;
-import com.chubb.claimsmanagement.workload.dto.AssignedClaimSummary;
-import com.chubb.claimsmanagement.workload.dto.StaffAssignmentSummary;
-import com.chubb.claimsmanagement.workload.dto.WorkloadSummary;
+import com.chubb.claimsmanagement.workload.dto.OfficerWorkload;
 import com.chubb.claimsmanagement.workload.dto.WorkloadSummaryResponse;
 import com.chubb.claimsmanagement.staff.entity.Staff;
 import com.chubb.claimsmanagement.staff.repository.StaffRepository;
@@ -20,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -45,35 +41,56 @@ public class WorkloadService {
     }
 
     public WorkloadSummaryResponse getWorkloadSummary() {
-                log.debug("Building workload status and staff assignment summary");
-        List<WorkloadSummary> statusSummary = Arrays.stream(ClaimStatus.values())
-                .map(status -> {
-                    List<String> claimNumbers = claimRepository.findByStatus(status).stream()
-                            .map(claim -> claim.getClaimNumber())
-                            .toList();
-                    return new WorkloadSummary(status, claimNumbers.size(), claimNumbers);
-                })
-                .toList();
+        log.debug("Building combined workload and liability summary");
+        List<com.chubb.claimsmanagement.claim.entity.Claim> claims = claimRepository.findAll();
+        List<StaffClaimQueue> pickedUpClaims = staffClaimQueueRepository
+                .findByStatusOrderByQueuedAtAsc(QueueStatus.PICKED_UP);
+        List<StaffClaimQueue> availableClaims = staffClaimQueueRepository
+                .findByStatusOrderByQueuedAtAsc(QueueStatus.AVAILABLE);
 
-        List<StaffAssignmentSummary> staffAssignments = staffRepository.findAll().stream()
-                .map(this::toStaffAssignmentSummary)
-                .toList();
+        int assignedClaims = pickedUpClaims.size();
+        int underAssessment = (int) claims.stream()
+                .filter(claim -> claim.getStatus() == ClaimStatus.ASSESSMENT_IN_PROGRESS)
+                .count();
+        int unassignedClaims = availableClaims.size();
+        int outstandingClaims = (int) claims.stream()
+                .filter(claim -> claim.getStatus() != ClaimStatus.APPROVED
+                        && claim.getStatus() != ClaimStatus.REJECTED
+                        && claim.getStatus() != ClaimStatus.CLOSED)
+                .count();
 
-        return new WorkloadSummaryResponse(statusSummary, staffAssignments);
+        return new WorkloadSummaryResponse(
+                claims.size(),
+                calculateLiabilityExposure(),
+                assignedClaims,
+                underAssessment,
+                unassignedClaims,
+                outstandingClaims,
+                staffRepository.findAll().stream()
+                        .map(staff -> toOfficerWorkload(staff, pickedUpClaims))
+                        .toList()
+        );
     }
 
-    private StaffAssignmentSummary toStaffAssignmentSummary(Staff staff) {
-        List<AssignedClaimSummary> assignedClaims = staffClaimQueueRepository
-                .findByStaffIdAndStatusOrderByPickedUpAtAsc(staff.getId(), QueueStatus.PICKED_UP)
-                .stream()
+    private OfficerWorkload toOfficerWorkload(Staff staff, List<StaffClaimQueue> pickedUpClaims) {
+        List<com.chubb.claimsmanagement.claim.entity.Claim> officerClaims = pickedUpClaims.stream()
+                .filter(queue -> queue.getStaff().getId().equals(staff.getId()))
                 .map(StaffClaimQueue::getClaim)
-                .map(claim -> new AssignedClaimSummary(claim.getClaimNumber(), claim.getStatus()))
                 .toList();
-        return new StaffAssignmentSummary(staff.getStaffNumber(), assignedClaims);
+        int underAssessment = (int) officerClaims.stream()
+                .filter(claim -> claim.getStatus() == ClaimStatus.ASSESSMENT_IN_PROGRESS)
+                .count();
+        return new OfficerWorkload(
+                staff.getStaffNumber(),
+                officerClaims.size(),
+                underAssessment,
+                officerClaims.stream()
+                        .map(claim -> claim.getClaimNumber())
+                        .toList()
+        );
     }
 
-    public LiabilityExposureResponse getLiabilityExposure() {
-                log.debug("Calculating outstanding liability exposure");
+    private BigDecimal calculateLiabilityExposure() {
         List<Assessment> assessments = assessmentRepository.findAll();
         BigDecimal totalRequestedAmount = assessments.stream()
                 .map(Assessment::getEstimatedAmount)
@@ -85,11 +102,6 @@ public class WorkloadService {
                 .map(Assessment::getEstimatedAmount)
                 .map(BigDecimal::valueOf)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        return new LiabilityExposureResponse(
-                totalRequestedAmount,
-                totalApprovedAmount,
-                totalRequestedAmount.subtract(totalApprovedAmount)
-        );
-    }
+        return totalRequestedAmount.subtract(totalApprovedAmount);
+        }
 }

@@ -43,8 +43,7 @@ Important workflow endpoints include:
 - `POST /api/v1/claims/{claimNumber}/assessments/start` starts staff assessment.
 - `POST /api/v1/claims/{claimNumber}/assessments` records the assessment result.
 - `PUT /api/v1/claims/{claimNumber}/more-information` accepts claimant information requested by staff.
-- `GET /api/v1/management/claims` returns status counts, claim numbers by status, and staff assignments.
-- `GET /api/v1/management/liability-exposure` reports requested, approved, and outstanding amounts.
+- `GET /api/v1/management/claims` returns total claims, liability exposure, assignment totals, outstanding claims, and officer workloads.
 
 ### Observability and Communication
 

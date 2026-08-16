@@ -1017,68 +1017,23 @@ paths:
                   value:
                     success: true
                     data:
-                      statusSummary:
-                        - status: SUBMITTED
-                          count: 1
-                          claimNumbers:
-                            - CLM-QUEUE1001
-                        - status: ASSIGNED
-                          count: 0
-                          claimNumbers: []
-                        - status: ASSESSMENT_IN_PROGRESS
-                          count: 0
-                          claimNumbers: []
-                        - status: MORE_INFO_REQUESTED
-                          count: 0
-                          claimNumbers: []
-                        - status: MORE_INFO_PROVIDED
-                          count: 0
-                          claimNumbers: []
-                        - status: APPROVED
-                          count: 1
-                          claimNumbers:
-                            - CLM-ABC12345
-                        - status: REJECTED
-                          count: 0
-                          claimNumbers: []
-                        - status: SETTLEMENT_IN_PROGRESS
-                          count: 0
-                          claimNumbers: []
-                        - status: CLOSED
-                          count: 0
-                          claimNumbers: []
-                      staffAssignments:
+                      totalClaims: 2
+                      liabilityExposure: 0.00
+                      assignedClaims: 0
+                      underAssessment: 0
+                      unassignedClaims: 1
+                      outstandingClaims: 1
+                      officerWorkloads:
                         - staffNumber: STAFF-1001
-                          assignedClaims: []
+                          assignedClaims: 0
+                          underAssessment: 0
+                          assignedClaimNumbers: []
                         - staffNumber: STAFF-1002
-                          assignedClaims: []
+                          assignedClaims: 0
+                          underAssessment: 0
+                          assignedClaimNumbers: []
                     message: OK
                     timestamp: "2024-01-15T10:30:00.000Z"
-
-  /api/v1/management/liability-exposure:
-    get:
-      tags:
-        - Workload
-      summary: Get outstanding liability exposure
-      description: Calculate total requested assessment amounts, approved amounts, and the remaining exposure as requested minus approved.
-      operationId: getLiabilityExposure
-      responses:
-        '200':
-          description: Liability exposure calculated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponseLiabilityExposure'
-              examples:
-                default:
-                  value:
-                    success: true
-                    data:
-                      totalRequestedAmount: 5000.00
-                      totalApprovedAmount: 5000.00
-                      outstandingLiabilityExposure: 0.00
-                    message: OK
-                    timestamp: "2024-01-15T12:15:00.000Z"
 
 components:
   schemas:
@@ -1353,16 +1308,58 @@ components:
     WorkloadSummaryResponse:
       type: object
       properties:
-        statusSummary:
+        totalClaims:
+          type: integer
+          description: Total number of claims
+          example: 2
+        liabilityExposure:
+          type: number
+          format: double
+          description: Outstanding liability exposure
+          example: 0.00
+        assignedClaims:
+          type: integer
+          description: Number of claims currently picked up by staff
+          example: 0
+        underAssessment:
+          type: integer
+          description: Number of claims currently under assessment
+          example: 0
+        unassignedClaims:
+          type: integer
+          description: Number of claims currently available for pickup
+          example: 1
+        outstandingClaims:
+          type: integer
+          description: Number of claims not yet approved, rejected, or closed
+          example: 1
+        officerWorkloads:
           type: array
-          description: Claim counts grouped by lifecycle status
+          description: Workload counts for each claims officer
           items:
-            $ref: '#/components/schemas/WorkloadSummary'
-        staffAssignments:
+            $ref: '#/components/schemas/OfficerWorkload'
+
+    OfficerWorkload:
+      type: object
+      properties:
+        staffNumber:
+          type: string
+          description: Public staff number
+          example: STAFF-1001
+        assignedClaims:
+          type: integer
+          description: Number of claims currently assigned to this staff member
+          example: 0
+        underAssessment:
+          type: integer
+          description: Number of assigned claims currently under assessment
+          example: 0
+        assignedClaimNumbers:
           type: array
-          description: Staff members and their currently assigned claim numbers
+          description: Public claim numbers currently assigned to this staff member
           items:
-            $ref: '#/components/schemas/StaffAssignmentSummary'
+            type: string
+          example: []
 
     LiabilityExposure:
       type: object
