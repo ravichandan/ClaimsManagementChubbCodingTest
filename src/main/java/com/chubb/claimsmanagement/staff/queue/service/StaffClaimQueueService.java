@@ -61,6 +61,17 @@ public class StaffClaimQueueService {
     }
 
     @Transactional
+    public void makeAvailableAfterMoreInformation(UUID claimId) {
+        StaffClaimQueue queue = queueRepository.findByClaimIdAndStatusForUpdate(claimId, QueueStatus.PICKED_UP)
+                .orElseThrow(() -> new ResourceNotFoundException("Picked up claim not found: " + claimId));
+
+        queue.setStaff(null);
+        queue.setStatus(QueueStatus.AVAILABLE);
+        queue.setPickedUpAt(null);
+        queueRepository.save(queue);
+    }
+
+    @Transactional
     public StaffClaimQueueResponse pickUpClaim(String claimNumber, String staffNumber) {
         Staff staff = requireStaff(staffNumber);
         Claim claim = requireClaim(claimNumber);
@@ -68,7 +79,8 @@ public class StaffClaimQueueService {
                 .orElseThrow(() -> new ResourceNotFoundException("Available claim not found: " + claimNumber));
 
         claim = queue.getClaim();
-        if (claim.getStatus() != ClaimStatus.SUBMITTED) {
+        if (claim.getStatus() != ClaimStatus.SUBMITTED
+            && claim.getStatus() != ClaimStatus.MORE_INFO_PROVIDED) {
             throw new BadRequestException("Claim cannot be picked up in status: " + claim.getStatus());
         }
 

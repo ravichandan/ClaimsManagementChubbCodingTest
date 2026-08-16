@@ -1,0 +1,8 @@
+package com.chubb.claimsmanagement.claim.dto;
+
+import jakarta.validation.constraints.NotBlank;
+
+public record UpdateClaimInformationRequest(
+        @NotBlank String description
+) {
+}

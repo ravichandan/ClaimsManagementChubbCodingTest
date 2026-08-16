@@ -2,6 +2,7 @@ package com.chubb.claimsmanagement.claim.controller;
 
 import com.chubb.claimsmanagement.claim.dto.CreateClaimRequest;
 import com.chubb.claimsmanagement.claim.dto.ClaimResponse;
+import com.chubb.claimsmanagement.claim.dto.UpdateClaimInformationRequest;
 import com.chubb.claimsmanagement.claim.service.ClaimService;
 import com.chubb.claimsmanagement.common.api.ApiResponse;
 import jakarta.validation.Valid;
@@ -10,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -32,6 +32,15 @@ public class ClaimController {
     @GetMapping("/claims/{claimNumber}")
     public ResponseEntity<ApiResponse<ClaimResponse>> getClaim(@PathVariable String claimNumber) {
         return ResponseEntity.ok(ApiResponse.success(claimService.getClaimByNumber(claimNumber)));
+    }
+
+    @PutMapping("/claims/{claimNumber}/more-information")
+    public ResponseEntity<ApiResponse<ClaimResponse>> updateClaimInformation(
+            @PathVariable String claimNumber,
+            @Valid @RequestBody UpdateClaimInformationRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(
+                claimService.updateClaimInformation(claimNumber, request),
+                "Claim information updated successfully"));
     }
 
     @GetMapping("/claims")

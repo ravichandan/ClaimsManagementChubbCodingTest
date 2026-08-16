@@ -2,6 +2,7 @@ package com.chubb.claimsmanagement.claim.service;
 
 import com.chubb.claimsmanagement.claim.dto.CreateClaimRequest;
 import com.chubb.claimsmanagement.claim.dto.ClaimResponse;
+import com.chubb.claimsmanagement.claim.dto.UpdateClaimInformationRequest;
 import com.chubb.claimsmanagement.claim.entity.Claim;
 import com.chubb.claimsmanagement.claim.repository.ClaimRepository;
 import com.chubb.claimsmanagement.claimant.entity.Claimant;
@@ -9,7 +10,9 @@ import com.chubb.claimsmanagement.claimant.repository.ClaimantRepository;
 import com.chubb.claimsmanagement.common.enums.ClaimStatus;
 import com.chubb.claimsmanagement.common.events.ClaimReadyForStaffEvent;
 import com.chubb.claimsmanagement.common.exceptions.ResourceNotFoundException;
+import com.chubb.claimsmanagement.common.exceptions.BadRequestException;
 import com.chubb.claimsmanagement.notification.service.NotificationService;
+import com.chubb.claimsmanagement.staff.queue.service.StaffClaimQueueService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,12 +25,15 @@ public class ClaimService {
     private final ClaimRepository claimRepository;
     private final ClaimantRepository claimantRepository;
     private final NotificationService notificationService;
+    private final StaffClaimQueueService staffClaimQueueService;
 
     public ClaimService(ClaimRepository claimRepository, ClaimantRepository claimantRepository,
-                        NotificationService notificationService) {
+                        NotificationService notificationService,
+                        StaffClaimQueueService staffClaimQueueService) {
         this.claimRepository = claimRepository;
         this.claimantRepository = claimantRepository;
         this.notificationService = notificationService;
+        this.staffClaimQueueService = staffClaimQueueService;
     }
 
     @Transactional
@@ -58,6 +64,22 @@ public class ClaimService {
         return claimRepository.findByClaimNumber(claimNumber)
                 .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Claim not found: " + claimNumber));
+    }
+
+    @Transactional
+    public ClaimResponse updateClaimInformation(String claimNumber, UpdateClaimInformationRequest request) {
+        Claim claim = claimRepository.findByClaimNumber(claimNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Claim not found: " + claimNumber));
+
+        if (claim.getStatus() != ClaimStatus.MORE_INFO_REQUESTED) {
+            throw new BadRequestException("Additional information cannot be provided in status: " + claim.getStatus());
+        }
+
+        claim.setDescription(request.description());
+        claim.setStatus(ClaimStatus.MORE_INFO_PROVIDED);
+        Claim saved = claimRepository.save(claim);
+        staffClaimQueueService.makeAvailableAfterMoreInformation(saved.getId());
+        return toResponse(saved);
     }
 
     public List<ClaimResponse> getClaimsByClaimantMemberNumber(String claimantMemberNumber) {

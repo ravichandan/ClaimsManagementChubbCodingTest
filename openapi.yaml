@@ -280,6 +280,65 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponseError'
 
+  /api/v1/claims/{claimNumber}/more-information:
+    put:
+      tags:
+        - Claims
+      summary: Provide additional claim information
+      description: Allow a claimant to provide updated information after staff requested more information
+      operationId: updateClaimInformation
+      parameters:
+        - name: claimNumber
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Public claim number awaiting additional information
+          example: CLM-ABC12345
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClaimInformationRequest'
+            examples:
+              default:
+                value:
+                  description: Police report and repair estimate attached for the accident on Main Street.
+      responses:
+        '200':
+          description: Claim information updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseClaimResponse'
+              examples:
+                default:
+                  value:
+                    success: true
+                    data:
+                      claimNumber: "CLM-ABC12345"
+                      claimantMemberNumber: "CM-1001"
+                      claimType: MOTOR
+                      status: MORE_INFO_PROVIDED
+                      description: Police report and repair estimate attached for the accident on Main Street.
+                      createdAt: "2024-01-15T10:30:00"
+                      updatedAt: "2024-01-15T13:00:00"
+                    message: Claim information updated successfully
+                    timestamp: "2024-01-15T13:00:00.000Z"
+        '400':
+          description: Claim is not awaiting additional information or the request is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+        '404':
+          description: Claim not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
   /api/v1/claims/{claimNumber}/assign:
     post:
       tags:
@@ -940,6 +999,18 @@ components:
           example: "Car accident on Main Street involving two vehicles"
       description: Request payload for creating a new claim
 
+    UpdateClaimInformationRequest:
+      type: object
+      required:
+        - description
+      properties:
+        description:
+          type: string
+          minLength: 1
+          description: Updated claim information supplied by the claimant
+          example: Police report and repair estimate attached for the accident on Main Street.
+      description: Request payload used when staff have requested more information
+
     ClaimResponse:
       type: object
       properties:
@@ -1025,6 +1096,7 @@ components:
         - ASSIGNED
         - ASSESSMENT_IN_PROGRESS
         - MORE_INFO_REQUESTED
+        - MORE_INFO_PROVIDED
         - APPROVED
         - REJECTED
         - SETTLEMENT_IN_PROGRESS
@@ -1035,6 +1107,7 @@ components:
         - ASSIGNED: Claim assigned to staff member
         - ASSESSMENT_IN_PROGRESS: Under assessment
         - MORE_INFO_REQUESTED: Awaiting additional information
+        - MORE_INFO_PROVIDED: Claimant has provided the requested information
         - APPROVED: Claim approved
         - REJECTED: Claim rejected
         - SETTLEMENT_IN_PROGRESS: Settlement being processed
