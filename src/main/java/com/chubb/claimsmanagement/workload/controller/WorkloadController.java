@@ -1,15 +1,13 @@
 package com.chubb.claimsmanagement.workload.controller;
 
 import com.chubb.claimsmanagement.common.api.ApiResponse;
-import com.chubb.claimsmanagement.workload.dto.WorkloadSummary;
+import com.chubb.claimsmanagement.workload.dto.WorkloadSummaryResponse;
 import com.chubb.claimsmanagement.workload.dto.LiabilityExposureResponse;
 import com.chubb.claimsmanagement.workload.service.WorkloadService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -22,7 +20,7 @@ public class WorkloadController {
     }
 
     @GetMapping("/management/claims")
-    public ResponseEntity<ApiResponse<List<WorkloadSummary>>> getWorkloadSummary() {
+    public ResponseEntity<ApiResponse<WorkloadSummaryResponse>> getWorkloadSummary() {
         return ResponseEntity.ok(ApiResponse.success(workloadService.getWorkloadSummary()));
     }
 

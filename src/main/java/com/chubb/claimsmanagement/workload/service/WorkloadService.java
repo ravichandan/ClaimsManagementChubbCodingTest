@@ -6,7 +6,15 @@ import com.chubb.claimsmanagement.claim.repository.ClaimRepository;
 import com.chubb.claimsmanagement.common.enums.AssessmentResult;
 import com.chubb.claimsmanagement.common.enums.ClaimStatus;
 import com.chubb.claimsmanagement.workload.dto.LiabilityExposureResponse;
+import com.chubb.claimsmanagement.workload.dto.AssignedClaimSummary;
+import com.chubb.claimsmanagement.workload.dto.StaffAssignmentSummary;
 import com.chubb.claimsmanagement.workload.dto.WorkloadSummary;
+import com.chubb.claimsmanagement.workload.dto.WorkloadSummaryResponse;
+import com.chubb.claimsmanagement.staff.entity.Staff;
+import com.chubb.claimsmanagement.staff.repository.StaffRepository;
+import com.chubb.claimsmanagement.staff.queue.entity.QueueStatus;
+import com.chubb.claimsmanagement.staff.queue.entity.StaffClaimQueue;
+import com.chubb.claimsmanagement.staff.queue.repository.StaffClaimQueueRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -18,16 +26,44 @@ public class WorkloadService {
 
     private final ClaimRepository claimRepository;
     private final AssessmentRepository assessmentRepository;
+    private final StaffRepository staffRepository;
+    private final StaffClaimQueueRepository staffClaimQueueRepository;
 
-    public WorkloadService(ClaimRepository claimRepository, AssessmentRepository assessmentRepository) {
+    public WorkloadService(ClaimRepository claimRepository,
+                           AssessmentRepository assessmentRepository,
+                           StaffRepository staffRepository,
+                           StaffClaimQueueRepository staffClaimQueueRepository) {
         this.claimRepository = claimRepository;
         this.assessmentRepository = assessmentRepository;
+        this.staffRepository = staffRepository;
+        this.staffClaimQueueRepository = staffClaimQueueRepository;
     }
 
-    public List<WorkloadSummary> getWorkloadSummary() {
-        return Arrays.stream(ClaimStatus.values())
-                .map(status -> new WorkloadSummary(status, claimRepository.findByStatus(status).size()))
+    public WorkloadSummaryResponse getWorkloadSummary() {
+        List<WorkloadSummary> statusSummary = Arrays.stream(ClaimStatus.values())
+                .map(status -> {
+                    List<String> claimNumbers = claimRepository.findByStatus(status).stream()
+                            .map(claim -> claim.getClaimNumber())
+                            .toList();
+                    return new WorkloadSummary(status, claimNumbers.size(), claimNumbers);
+                })
                 .toList();
+
+        List<StaffAssignmentSummary> staffAssignments = staffRepository.findAll().stream()
+                .map(this::toStaffAssignmentSummary)
+                .toList();
+
+        return new WorkloadSummaryResponse(statusSummary, staffAssignments);
+    }
+
+    private StaffAssignmentSummary toStaffAssignmentSummary(Staff staff) {
+        List<AssignedClaimSummary> assignedClaims = staffClaimQueueRepository
+                .findByStaffIdAndStatusOrderByPickedUpAtAsc(staff.getId(), QueueStatus.PICKED_UP)
+                .stream()
+                .map(StaffClaimQueue::getClaim)
+                .map(claim -> new AssignedClaimSummary(claim.getClaimNumber(), claim.getStatus()))
+                .toList();
+        return new StaffAssignmentSummary(staff.getStaffNumber(), assignedClaims);
     }
 
     public LiabilityExposureResponse getLiabilityExposure() {
