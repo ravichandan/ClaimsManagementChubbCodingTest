@@ -1,7 +1,5 @@
 # ClaimsManagementChubbCodingTest
 
-
-
 **Coding test**
 
 This gradle project is used to do claims management for all the six markets of Chubb
@@ -23,9 +21,18 @@ The frontend is out of scope. What the backend needs to be — its structure, it
 
 ## Architecture 
 
-### Assumptions & Constraints
-When we break down the business problem, there is 'claims' process from customer (claimant) side and also the staff side. Means, at a very initial level assumption is that there is potentially a micro services design, not sure yet. For not I am going to design as a multi module monolith application, if more analysis leads to a micro-service design, the modules can be easily extracted as own services.
+### Assumptions, Constraints, Brain storiming, Decisions,
+Claimants need to be able to some actions. lets break it down 
+ - report incident -> need a rest endpoint something like POST /api/v1/claims
+- track their claim -> a rest endpoint like GET /api/v1/claims
+- provide additional info -> an endpoint like PUT /api/v1/claims
+- receive decisions -> may be a email/sms notification?
 
+Claims staff need to be able to some actions. lets break it down 
+- pickup incoming claims -> means there is a list of 'pending' claims and an officer should be able to assign to themselves. So a potential 'queue' where incoming claims are stored and a rest endpoint like POST /claims/claimId/assignments
+- review and assess them -> May be a set of business rules and validations to be performed. means they could also changes to rules and validations based on customers, so need to keep them devoupled. also mostly 'assess' means a manual task, so when it is done, they put the result in a different queue for next process. 
+- progress claims to settlement or rejection - means when a settlement is progressed, it is sent to finance team to do the finance & legal transactions and also notify customer in email. same thing for rejection also but no finance team involved. If in case finance and legal teams are to be notified, again we expect an endpoint or queue, based on async or sync decisions. I think as the customer dont see this, there could be async process but again need to check with business about the ETAs.
+- see their team's workload and performance -> means a manager or admin can have a UI dashboard to see the # of claims and their statuses. So endpoints for this GET /api/v1/management/claims gives all the claims and statuses, etc.
 
 
 
