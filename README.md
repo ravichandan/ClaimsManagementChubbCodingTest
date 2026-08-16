@@ -164,6 +164,25 @@ Examples of events:
 
 These events can be published to Kafka or an equivalent messaging layer, which keeps the system decoupled and easier to extend.
 
+
+### Outbox Event Pattern for atomic DB + Kafka operations
+I am using outbox event pattern to make sure no events are lost. 
+
+What happens if DB update is successful and kafka failed? the event will be lost. Even if we are using @Transactional in spring, it cant guarantee an atomic transaction with kafka and db. So lets go with outbox event pattern. 
+HEre we store the event in the database first and commit both tables. Once it is commited, we have the event in the db and wont be lost, We can then take a publisher to publish the event and if the publishing is successful, the event can be deleted from db, if not retry it again when the publisher is ready.
+
+```
+Database update
+    +
+Outbox event insert
+    |
+Transaction commits
+    |
+Scheduled outbox publisher
+    |
+JMS destination
+```
+
 ## Technology Choices
 
 For this coding test, the intended stack is:

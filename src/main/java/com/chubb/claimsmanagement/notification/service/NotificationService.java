@@ -6,7 +6,6 @@ import com.chubb.claimsmanagement.common.events.AssessmentApprovedEvent;
 import com.chubb.claimsmanagement.common.events.AssessmentRejectedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,29 +17,29 @@ public class NotificationService {
     private static final String FINANCE_TEAM_QUEUE = "finance-team-queue";
     private static final String ASSESSMENT_REJECTED_QUEUE = "assessment-rejected-queue";
 
-    private final JmsTemplate jmsTemplate;
+    private final OutboxEventService outboxEventService;
 
-    public NotificationService(JmsTemplate jmsTemplate) {
-        this.jmsTemplate = jmsTemplate;
+    public NotificationService(OutboxEventService outboxEventService) {
+        this.outboxEventService = outboxEventService;
     }
 
     public void publishClaimSubmitted(ClaimSubmittedEvent event) {
-        jmsTemplate.convertAndSend(CLAIM_EVENTS_QUEUE, event);
-        log.info("Published claim submitted event for claim {}", event.claimNumber());
+        outboxEventService.enqueue(CLAIM_EVENTS_QUEUE, event);
+        log.info("Stored claim submitted event for claim {} in the outbox", event.claimNumber());
     }
 
     public void publishClaimReadyForStaff(ClaimReadyForStaffEvent event) {
-        jmsTemplate.convertAndSend(STAFF_CLAIM_QUEUE, event);
-        log.info("Published claim ready for staff event for claim {}", event.claimNumber());
+        outboxEventService.enqueue(STAFF_CLAIM_QUEUE, event);
+        log.info("Stored claim ready for staff event for claim {} in the outbox", event.claimNumber());
     }
 
     public void publishAssessmentApproved(AssessmentApprovedEvent event) {
-        jmsTemplate.convertAndSend(FINANCE_TEAM_QUEUE, event);
-        log.info("Published approved assessment for claim {} to the finance team queue", event.claimNumber());
+        outboxEventService.enqueue(FINANCE_TEAM_QUEUE, event);
+        log.info("Stored approved assessment for claim {} in the outbox", event.claimNumber());
     }
 
     public void publishAssessmentRejected(AssessmentRejectedEvent event) {
-        jmsTemplate.convertAndSend(ASSESSMENT_REJECTED_QUEUE, event);
-        log.info("Published rejected assessment for claim {} to the notification queue", event.claimNumber());
+        outboxEventService.enqueue(ASSESSMENT_REJECTED_QUEUE, event);
+        log.info("Stored rejected assessment for claim {} in the outbox", event.claimNumber());
     }
 }

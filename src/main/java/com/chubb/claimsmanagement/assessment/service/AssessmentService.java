@@ -17,6 +17,7 @@ import com.chubb.claimsmanagement.notification.service.NotificationService;
 import com.chubb.claimsmanagement.staff.entity.Staff;
 import com.chubb.claimsmanagement.staff.repository.StaffRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -39,6 +40,7 @@ public class AssessmentService {
         this.notificationService = notificationService;
     }
 
+    @Transactional
     public AssessmentResponse createAssessment(CreateAssessmentRequest request) {
         Claim claim = claimRepository.findByClaimNumber(request.claimNumber())
                 .orElseThrow(() -> new ResourceNotFoundException("Claim not found: " + request.claimNumber()));

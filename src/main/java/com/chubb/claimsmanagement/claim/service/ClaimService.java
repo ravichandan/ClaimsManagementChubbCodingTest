@@ -11,6 +11,7 @@ import com.chubb.claimsmanagement.common.events.ClaimReadyForStaffEvent;
 import com.chubb.claimsmanagement.common.exceptions.ResourceNotFoundException;
 import com.chubb.claimsmanagement.notification.service.NotificationService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +30,7 @@ public class ClaimService {
         this.notificationService = notificationService;
     }
 
+    @Transactional
     public ClaimResponse createClaim(CreateClaimRequest request) {
         Claimant claimant = claimantRepository.findByClaimantMemberNumber(request.claimantMemberNumber())
                 .orElseThrow(() -> new ResourceNotFoundException("Claimant not found: " + request.claimantMemberNumber()));
