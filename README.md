@@ -35,6 +35,35 @@ Claims staff need to be able to some actions. lets break it down
 - see their team's workload and performance -> means a manager or admin can have a UI dashboard to see the # of claims and their statuses. So endpoints for this GET /api/v1/management/claims gives all the claims and statuses, etc.
 
 
+### Entities
+Listing down potential entities
+#### Claim
+- Id:  UUID
+- version: int
+- status: ClaimStatus
+- name: string
+- crated_at: Date
+- modified_at: DAte
+- claimNumber: UUID
+- description: String
+
+#### Claimant
+- id: UUID
+- name: String
+- email: String
+- phone: String
+- address: String
+- policyNumber: UUID // potential foreign key of insurance policy number
+
+#### ClaimHistory
+- id: UUID
+- claimId: UUIUD
+- status: string
+- createdAt: Date
+
+
+
+
 
 
 I am using the following stack - Java with SPring boot 
