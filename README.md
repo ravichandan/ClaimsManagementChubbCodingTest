@@ -61,6 +61,37 @@ Listing down potential entities
 - status: string
 - createdAt: Date
 
+#### Assessment
+- id: String
+- claimId: String
+- staffId: string
+- type: String
+- description: String
+- details: String
+- estimatedAmount: double
+- settledAmount; double
+- createdAt: Date
+- claimStatus: ClaimSTatus
+- result: MORE_INFO/CLOSED
+
+
+#### ClaimStatus: ENUM
+SUMITTED, ASSIGNED,ASSESSMENT_INPROGRESS,APPROVED,REJECTED,SETTLEMENT_INPROGRESS,CLOSED
+
+#### Claim Lifecycle
+APPROVED PATH:
+
+SUBMITTED->ASSIGNED->ASSEMENT_INPROGRESS->APPROVED->SETTLEMENT_INPROGRESS->CLOSED
+
+MORE INFO PATH:
+
+SUBMITTED->ASSIGNED->ASSEMENT_INPROGRESS->MORE_INFO_REQUESTED*->SETTLEMENT_INPROGRESS/REJECTED->CLOSED
+
+
+REJECTED PATH:
+
+SUBMITTED->ASSIGNED->ASSEMENT_INPROGRESS->REJECTED
+
 
 
 
