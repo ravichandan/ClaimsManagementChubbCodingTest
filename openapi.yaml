@@ -33,6 +33,8 @@ tags:
     description: Claimant management operations
   - name: Claims
     description: Claims management and lifecycle operations
+  - name: Assessments
+    description: Assessment and evaluation operations
   - name: Workload
     description: Workload and management operations
 
@@ -58,8 +60,8 @@ paths:
                   lastName: Doe
                   email: john.doe@example.com
                   phone: "+1-555-0100"
-                  address: "123 Main St, City, State 12345"
-                  policyNumber: "POL-123456"
+                  address: "123 Main St, Sydney, NSW"
+                  policyNumber: "POL-1001"
       responses:
         '201':
           description: Claimant created successfully
@@ -72,14 +74,14 @@ paths:
                   value:
                     success: true
                     data:
-                      id: 550e8400-e29b-41d4-a716-446655440000
+                      id: 11111111-1111-1111-1111-111111111111
                       claimantMemberNumber: "CM-1001"
                       firstName: John
                       lastName: Doe
                       email: john.doe@example.com
                       phone: "+1-555-0100"
-                      address: "123 Main St, City, State 12345"
-                      policyNumber: "POL-123456"
+                      address: "123 Main St, Sydney, NSW"
+                      policyNumber: "POL-1001"
                     message: Claimant created successfully
                     timestamp: "2024-01-15T10:30:00.000Z"
         '400':
@@ -110,7 +112,7 @@ paths:
             type: string
             format: uuid
           description: Claimant ID
-          example: 550e8400-e29b-41d4-a716-446655440000
+          example: 11111111-1111-1111-1111-111111111111
       responses:
         '200':
           description: Claimant found
@@ -197,7 +199,7 @@ paths:
             type: string
             format: uuid
           description: Internal claimant ID to filter claims
-          example: 550e8400-e29b-41d4-a716-446655440000
+          example: 11111111-1111-1111-1111-111111111111
         - name: claimantMemberNumber
           in: query
           required: false
@@ -298,7 +300,7 @@ paths:
             type: string
             format: uuid
           description: Claim ID to assign
-          example: 660e8400-e29b-41d4-a716-446655440000
+          example: 55555555-5555-5555-5555-555555555555
         - name: staffId
           in: query
           required: true
@@ -306,7 +308,7 @@ paths:
             type: string
             format: uuid
           description: Staff member ID to assign the claim to
-          example: 770e8400-e29b-41d4-a716-446655440000
+          example: 33333333-3333-3333-3333-333333333333
       responses:
         '200':
           description: Claim assigned successfully
@@ -319,9 +321,9 @@ paths:
                   value:
                     success: true
                     data:
-                      id: 660e8400-e29b-41d4-a716-446655440000
+                      id: 55555555-5555-5555-5555-555555555555
                       claimNumber: "CLM-ABC12345"
-                      claimantId: 550e8400-e29b-41d4-a716-446655440000
+                      claimantId: 11111111-1111-1111-1111-111111111111
                       claimantMemberNumber: "CM-1001"
                       claimType: MOTOR
                       status: ASSIGNED
@@ -338,6 +340,247 @@ paths:
                 $ref: '#/components/schemas/ApiResponseError'
         '404':
           description: Claim or staff member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/claims/{claimId}/assessments:
+    post:
+      tags:
+        - Assessments
+      summary: Create a new assessment
+      description: Create an assessment for a claim to determine approval, rejection, or request for more information
+      operationId: createAssessment
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Claim ID to assess
+          example: 55555555-5555-5555-5555-555555555555
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssessmentRequest'
+            examples:
+              approved:
+                value:
+                  claimId: 55555555-5555-5555-5555-555555555555
+                  staffId: 33333333-3333-3333-3333-333333333333
+                  assessmentType: INITIAL_REVIEW
+                  description: Initial assessment completed. Claim appears valid and within policy terms.
+                  details: All documentation provided. No red flags identified.
+                  estimatedAmount: 5000.00
+                  result: APPROVED
+              moreInfo:
+                value:
+                  claimId: 55555555-5555-5555-5555-555555555555
+                  staffId: 33333333-3333-3333-3333-333333333333
+                  assessmentType: INITIAL_REVIEW
+                  description: Additional information needed for approval.
+                  details: Police report missing. Request copy from claimant.
+                  estimatedAmount: 5000.00
+                  result: MORE_INFO_REQUIRED
+      responses:
+        '201':
+          description: Assessment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAssessment'
+              examples:
+                default:
+                  value:
+                    success: true
+                    data:
+                      id: 66666666-6666-6666-6666-666666666666
+                      claimNumber: "CLM-ABC12345"
+                      staffId: 33333333-3333-3333-3333-333333333333
+                      assessmentType: INITIAL_REVIEW
+                      description: Initial assessment completed
+                      details: All documentation provided
+                      estimatedAmount: 5000.00
+                      settledAmount: null
+                      result: APPROVED
+                      createdAt: "2024-01-15T11:30:00"
+                      updatedAt: "2024-01-15T11:30:00"
+                    message: Assessment created successfully
+                    timestamp: "2024-01-15T11:30:00.000Z"
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+        '404':
+          description: Claim or staff not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+    get:
+      tags:
+        - Assessments
+      summary: Get assessments for a claim
+      description: Retrieve all assessments associated with a specific claim
+      operationId: getAssessmentsByClaim
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Claim ID to retrieve assessments for
+          example: 55555555-5555-5555-5555-555555555555
+      responses:
+        '200':
+          description: Assessments retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAssessmentList'
+              examples:
+                default:
+                  value:
+                    success: true
+                    data:
+                      - id: 66666666-6666-6666-6666-666666666666
+                        claimNumber: "CLM-ABC12345"
+                        staffId: 33333333-3333-3333-3333-333333333333
+                        assessmentType: INITIAL_REVIEW
+                        description: Initial assessment completed
+                        details: All documentation provided
+                        estimatedAmount: 5000.00
+                        settledAmount: null
+                        result: APPROVED
+                        createdAt: "2024-01-15T11:30:00"
+                        updatedAt: "2024-01-15T11:30:00"
+                    message: OK
+                    timestamp: "2024-01-15T11:30:00.000Z"
+        '404':
+          description: Claim not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/assessments/{assessmentId}:
+    get:
+      tags:
+        - Assessments
+      summary: Get assessment by ID
+      description: Retrieve a specific assessment's details
+      operationId: getAssessment
+      parameters:
+        - name: assessmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Assessment ID
+          example: 66666666-6666-6666-6666-666666666666
+      responses:
+        '200':
+          description: Assessment found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAssessment'
+        '404':
+          description: Assessment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/staff/{staffId}/assessments:
+    get:
+      tags:
+        - Assessments
+      summary: Get assessments by staff member
+      description: Retrieve all assessments performed by a specific staff member
+      operationId: getAssessmentsByStaff
+      parameters:
+        - name: staffId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Staff member ID
+          example: 33333333-3333-3333-3333-333333333333
+      responses:
+        '200':
+          description: Assessments retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAssessmentList'
+        '404':
+          description: Staff member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/assessments/{assessmentId}/settlement:
+    patch:
+      tags:
+        - Assessments
+      summary: Update settled amount
+      description: Update the settled amount for an assessment
+      operationId: updateSettledAmount
+      parameters:
+        - name: assessmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Assessment ID
+          example: 66666666-6666-6666-6666-666666666666
+        - name: settledAmount
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+          description: The settled amount for the assessment
+          example: 4800.00
+      responses:
+        '200':
+          description: Settled amount updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAssessment'
+              examples:
+                default:
+                  value:
+                    success: true
+                    data:
+                      id: 66666666-6666-6666-6666-666666666666
+                      claimNumber: "CLM-ABC12345"
+                      staffId: 33333333-3333-3333-3333-333333333333
+                      assessmentType: INITIAL_REVIEW
+                      description: Initial assessment completed
+                      details: All documentation provided
+                      estimatedAmount: 5000.00
+                      settledAmount: 4800.00
+                      result: APPROVED
+                      createdAt: "2024-01-15T11:30:00"
+                      updatedAt: "2024-01-15T12:15:00"
+                    message: Settled amount updated successfully
+                    timestamp: "2024-01-15T12:15:00.000Z"
+        '404':
+          description: Assessment not found
           content:
             application/json:
               schema:
@@ -423,12 +666,12 @@ components:
           type: string
           minLength: 1
           description: Physical address of the claimant
-          example: "123 Main St, City, State 12345"
+          example: "123 Main St, Sydney, NSW"
         policyNumber:
           type: string
           minLength: 1
           description: Insurance policy number
-          example: "POL-123456"
+          example: "POL-1001"
       description: Request payload for creating a new claimant
 
     Claimant:
@@ -438,7 +681,7 @@ components:
           type: string
           format: uuid
           description: Unique identifier for the claimant
-          example: 550e8400-e29b-41d4-a716-446655440000
+          example: 11111111-1111-1111-1111-111111111111
         claimantMemberNumber:
           type: string
           description: Customer-facing claimant member number
@@ -463,11 +706,11 @@ components:
         address:
           type: string
           description: Physical address of the claimant
-          example: "123 Main St, City, State 12345"
+          example: "123 Main St, Sydney, NSW"
         policyNumber:
           type: string
           description: Insurance policy number
-          example: "POL-123456"
+          example: "POL-1001"
       description: Claimant entity representing an insurance policy holder
 
     CreateClaimRequest:
@@ -708,6 +951,159 @@ components:
           description: Timestamp of the response
           example: "2024-01-15T10:30:00.000Z"
       description: API response wrapper for WorkloadSummary list
+
+    CreateAssessmentRequest:
+      type: object
+      required:
+        - claimId
+        - staffId
+        - assessmentType
+        - description
+        - estimatedAmount
+        - result
+      properties:
+        claimId:
+          type: string
+          format: uuid
+          description: UUID of the claim being assessed
+          example: 55555555-5555-5555-5555-555555555555
+        staffId:
+          type: string
+          format: uuid
+          description: UUID of the staff member performing the assessment
+          example: 33333333-3333-3333-3333-333333333333
+        assessmentType:
+          type: string
+          minLength: 1
+          description: Type of assessment being performed
+          example: INITIAL_REVIEW
+        description:
+          type: string
+          minLength: 1
+          description: Description of the assessment findings
+          example: "Initial assessment completed. Claim appears valid."
+        details:
+          type: string
+          description: Additional detailed notes on the assessment
+          example: "All documentation provided. No red flags identified."
+        estimatedAmount:
+          type: number
+          format: double
+          description: Estimated settlement amount
+          example: 5000.00
+        result:
+          $ref: '#/components/schemas/AssessmentResult'
+      description: Request payload for creating a new assessment
+
+    AssessmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the assessment
+          example: 66666666-6666-6666-6666-666666666666
+        claimNumber:
+          type: string
+          description: Claim number associated with this assessment
+          example: "CLM-ABC12345"
+        staffId:
+          type: string
+          format: uuid
+          description: UUID of the staff member who performed the assessment
+          example: 33333333-3333-3333-3333-333333333333
+        assessmentType:
+          type: string
+          description: Type of assessment
+          example: INITIAL_REVIEW
+        description:
+          type: string
+          description: Description of the assessment findings
+          example: "Initial assessment completed"
+        details:
+          type: string
+          description: Detailed notes on the assessment
+          example: "All documentation provided"
+        estimatedAmount:
+          type: number
+          format: double
+          description: Estimated settlement amount
+          example: 5000.00
+        settledAmount:
+          type: number
+          format: double
+          nullable: true
+          description: Actual settled amount
+          example: 4800.00
+        result:
+          $ref: '#/components/schemas/AssessmentResult'
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the assessment was created
+          example: "2024-01-15T11:30:00"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the assessment was last updated
+          example: "2024-01-15T11:30:00"
+      description: Response payload containing assessment details
+
+    AssessmentResult:
+      type: string
+      enum:
+        - APPROVED
+        - REJECTED
+        - MORE_INFO_REQUIRED
+      description: |-
+        Result of the assessment
+        - APPROVED: Claim approved for settlement
+        - REJECTED: Claim rejected
+        - MORE_INFO_REQUIRED: Additional information needed from claimant
+      example: APPROVED
+
+    ApiResponseAssessment:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the operation was successful
+          example: true
+        data:
+          $ref: '#/components/schemas/AssessmentResponse'
+        message:
+          type: string
+          description: Response message
+          example: "Assessment created successfully"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the response
+          example: "2024-01-15T11:30:00.000Z"
+      description: API response wrapper for Assessment data
+
+    ApiResponseAssessmentList:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the operation was successful
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssessmentResponse'
+          description: List of assessments
+        message:
+          type: string
+          description: Response message
+          example: "OK"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the response
+          example: "2024-01-15T11:30:00.000Z"
+      description: API response wrapper for list of Assessment data
 
     ApiResponseError:
       type: object

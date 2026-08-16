@@ -99,6 +99,10 @@ The business process can be broken down into a few clear areas:
 - REJECTED
 - MORE_INFO_REQUIRED
 
+#### Relationships
+- A Claimant has a one-to-many relationship with Claim: one claimant can submit multiple claims.
+- A Claim has a many-to-one relationship with Claimant: many claims belong to a single claimant.
+
 ### Claim Lifecycle
 
 Approved path:

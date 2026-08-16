@@ -4,7 +4,6 @@ import com.chubb.claimsmanagement.common.enums.ClaimStatus;
 import com.chubb.claimsmanagement.common.enums.ClaimType;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public record ClaimResponse(
         String claimNumber,

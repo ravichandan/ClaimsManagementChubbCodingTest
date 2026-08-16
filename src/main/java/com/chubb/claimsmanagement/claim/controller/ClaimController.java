@@ -24,7 +24,7 @@ public class ClaimController {
 
     @PostMapping("/claims")
     public ResponseEntity<ApiResponse<ClaimResponse>> createClaim(@Valid @RequestBody CreateClaimRequest request) {
-        ClaimResponse response = claimService.createClaim(request);
+    ClaimResponse response = claimService.createClaim(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Claim created successfully"));
     }
