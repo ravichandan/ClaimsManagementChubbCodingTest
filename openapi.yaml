@@ -1,0 +1,758 @@
+openapi: 3.0.3
+info:
+  title: Claims Management System API
+  description: |-
+    API specification for the Claims Management System, a Spring Boot application for managing insurance claims.
+    
+    ## Features
+    - Create and manage claimants
+    - Submit and track insurance claims
+    - Assign claims to staff members
+    - Monitor workload and claims status
+    
+    ## Claim Lifecycle States
+    - SUBMITTED: Initial claim submission
+    - ASSIGNED: Claim assigned to a staff member
+    - ASSESSMENT_IN_PROGRESS: Under review
+    - MORE_INFO_REQUESTED: Additional information needed
+    - APPROVED: Claim approved
+    - REJECTED: Claim rejected
+    - SETTLEMENT_IN_PROGRESS: Settlement being processed
+    - CLOSED: Claim closed
+  contact:
+    name: API Support
+    email: support@chubb.com
+  version: 0.0.1-SNAPSHOT
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.claimsmanagement.com
+    description: Production server
+tags:
+  - name: Claimants
+    description: Claimant management operations
+  - name: Claims
+    description: Claims management and lifecycle operations
+  - name: Workload
+    description: Workload and management operations
+
+paths:
+  /api/v1/claimants:
+    post:
+      tags:
+        - Claimants
+      summary: Create a new claimant
+      description: Register a new claimant in the system
+      operationId: createClaimant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClaimantRequest'
+            examples:
+              default:
+                value:
+                  firstName: John
+                  lastName: Doe
+                  email: john.doe@example.com
+                  phone: "+1-555-0100"
+                  address: "123 Main St, City, State 12345"
+                  policyNumber: "POL-123456"
+      responses:
+        '201':
+          description: Claimant created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseClaimant'
+              examples:
+                default:
+                  value:
+                    success: true
+                    data:
+                      id: 550e8400-e29b-41d4-a716-446655440000
+                      firstName: John
+                      lastName: Doe
+                      email: john.doe@example.com
+                      phone: "+1-555-0100"
+                      address: "123 Main St, City, State 12345"
+                      policyNumber: "POL-123456"
+                    message: Claimant created successfully
+                    timestamp: "2024-01-15T10:30:00.000Z"
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+        '409':
+          description: Claimant already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/claimants/{id}:
+    get:
+      tags:
+        - Claimants
+      summary: Get claimant by ID
+      description: Retrieve a specific claimant's information
+      operationId: getClaimant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Claimant ID
+          example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Claimant found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseClaimant'
+        '404':
+          description: Claimant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/claims:
+    post:
+      tags:
+        - Claims
+      summary: Create a new claim
+      description: Submit a new insurance claim for a claimant
+      operationId: createClaim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClaimRequest'
+            examples:
+              motor:
+                value:
+                  claimantId: 550e8400-e29b-41d4-a716-446655440000
+                  claimType: MOTOR
+                  description: Car accident on Main Street involving two vehicles
+              property:
+                value:
+                  claimantId: 550e8400-e29b-41d4-a716-446655440001
+                  claimType: PROPERTY
+                  description: Water damage to kitchen from burst pipe
+      responses:
+        '201':
+          description: Claim created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseClaimResponse'
+              examples:
+                default:
+                  value:
+                    success: true
+                    data:
+                      id: 660e8400-e29b-41d4-a716-446655440000
+                      claimNumber: "CLM-ABC12345"
+                      claimantId: 550e8400-e29b-41d4-a716-446655440000
+                      claimType: MOTOR
+                      status: SUBMITTED
+                      description: Car accident on Main Street involving two vehicles
+                      createdAt: "2024-01-15T10:30:00"
+                      updatedAt: "2024-01-15T10:30:00"
+                    message: Claim created successfully
+                    timestamp: "2024-01-15T10:30:00.000Z"
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+        '404':
+          description: Claimant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+    get:
+      tags:
+        - Claims
+      summary: Get claims by claimant
+      description: Retrieve all claims for a specific claimant
+      operationId: getClaimsByClaimant
+      parameters:
+        - name: claimantId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Claimant ID to filter claims
+          example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: List of claims retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseClaimResponseList'
+              examples:
+                default:
+                  value:
+                    success: true
+                    data:
+                      - id: 660e8400-e29b-41d4-a716-446655440000
+                        claimNumber: "CLM-ABC12345"
+                        claimantId: 550e8400-e29b-41d4-a716-446655440000
+                        claimType: MOTOR
+                        status: SUBMITTED
+                        description: Car accident on Main Street
+                        createdAt: "2024-01-15T10:30:00"
+                        updatedAt: "2024-01-15T10:30:00"
+                      - id: 660e8400-e29b-41d4-a716-446655440001
+                        claimNumber: "CLM-DEF67890"
+                        claimantId: 550e8400-e29b-41d4-a716-446655440000
+                        claimType: PROPERTY
+                        status: ASSIGNED
+                        description: Water damage to kitchen
+                        createdAt: "2024-01-14T15:45:00"
+                        updatedAt: "2024-01-15T09:00:00"
+                    message: OK
+                    timestamp: "2024-01-15T10:30:00.000Z"
+        '400':
+          description: Missing required parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/claims/{claimId}:
+    get:
+      tags:
+        - Claims
+      summary: Get claim by ID
+      description: Retrieve a specific claim's details
+      operationId: getClaim
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Claim ID
+          example: 660e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Claim found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseClaimResponse'
+              examples:
+                default:
+                  value:
+                    success: true
+                    data:
+                      id: 660e8400-e29b-41d4-a716-446655440000
+                      claimNumber: "CLM-ABC12345"
+                      claimantId: 550e8400-e29b-41d4-a716-446655440000
+                      claimType: MOTOR
+                      status: SUBMITTED
+                      description: Car accident on Main Street involving two vehicles
+                      createdAt: "2024-01-15T10:30:00"
+                      updatedAt: "2024-01-15T10:30:00"
+                    message: OK
+                    timestamp: "2024-01-15T10:30:00.000Z"
+        '404':
+          description: Claim not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/claims/{claimId}/assign:
+    post:
+      tags:
+        - Claims
+      summary: Assign claim to staff member
+      description: Assign a claim to a staff member for processing
+      operationId: assignClaim
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Claim ID to assign
+          example: 660e8400-e29b-41d4-a716-446655440000
+        - name: staffId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Staff member ID to assign the claim to
+          example: 770e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Claim assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseClaimEntity'
+              examples:
+                default:
+                  value:
+                    success: true
+                    data:
+                      id: 660e8400-e29b-41d4-a716-446655440000
+                      claimNumber: "CLM-ABC12345"
+                      claimantId: 550e8400-e29b-41d4-a716-446655440000
+                      claimType: MOTOR
+                      status: ASSIGNED
+                      description: Car accident on Main Street involving two vehicles
+                      createdAt: "2024-01-15T10:30:00"
+                      updatedAt: "2024-01-15T11:00:00"
+                    message: Claim assigned successfully
+                    timestamp: "2024-01-15T11:00:00.000Z"
+        '400':
+          description: Invalid state or request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+        '404':
+          description: Claim or staff member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/management/claims:
+    get:
+      tags:
+        - Workload
+      summary: Get workload summary
+      description: Retrieve claims workload summary grouped by status
+      operationId: getWorkloadSummary
+      responses:
+        '200':
+          description: Workload summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseWorkloadSummaryList'
+              examples:
+                default:
+                  value:
+                    success: true
+                    data:
+                      - status: SUBMITTED
+                        count: 15
+                      - status: ASSIGNED
+                        count: 32
+                      - status: ASSESSMENT_IN_PROGRESS
+                        count: 28
+                      - status: MORE_INFO_REQUESTED
+                        count: 8
+                      - status: APPROVED
+                        count: 45
+                      - status: REJECTED
+                        count: 12
+                      - status: SETTLEMENT_IN_PROGRESS
+                        count: 5
+                      - status: CLOSED
+                        count: 120
+                    message: OK
+                    timestamp: "2024-01-15T10:30:00.000Z"
+
+components:
+  schemas:
+    CreateClaimantRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - phone
+        - address
+        - policyNumber
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          description: First name of the claimant
+          example: John
+        lastName:
+          type: string
+          minLength: 1
+          description: Last name of the claimant
+          example: Doe
+        email:
+          type: string
+          format: email
+          description: Email address of the claimant
+          example: john.doe@example.com
+        phone:
+          type: string
+          minLength: 1
+          description: Phone number of the claimant
+          example: "+1-555-0100"
+        address:
+          type: string
+          minLength: 1
+          description: Physical address of the claimant
+          example: "123 Main St, City, State 12345"
+        policyNumber:
+          type: string
+          minLength: 1
+          description: Insurance policy number
+          example: "POL-123456"
+      description: Request payload for creating a new claimant
+
+    Claimant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the claimant
+          example: 550e8400-e29b-41d4-a716-446655440000
+        firstName:
+          type: string
+          description: First name of the claimant
+          example: John
+        lastName:
+          type: string
+          description: Last name of the claimant
+          example: Doe
+        email:
+          type: string
+          format: email
+          description: Email address of the claimant
+          example: john.doe@example.com
+        phone:
+          type: string
+          description: Phone number of the claimant
+          example: "+1-555-0100"
+        address:
+          type: string
+          description: Physical address of the claimant
+          example: "123 Main St, City, State 12345"
+        policyNumber:
+          type: string
+          description: Insurance policy number
+          example: "POL-123456"
+      description: Claimant entity representing an insurance policy holder
+
+    CreateClaimRequest:
+      type: object
+      required:
+        - claimantId
+        - claimType
+        - description
+      properties:
+        claimantId:
+          type: string
+          format: uuid
+          description: ID of the claimant submitting the claim
+          example: 550e8400-e29b-41d4-a716-446655440000
+        claimType:
+          $ref: '#/components/schemas/ClaimType'
+        description:
+          type: string
+          minLength: 1
+          description: Detailed description of the claim
+          example: "Car accident on Main Street involving two vehicles. Police report filed."
+      description: Request payload for creating a new claim
+
+    ClaimResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the claim
+          example: 660e8400-e29b-41d4-a716-446655440000
+        claimNumber:
+          type: string
+          description: Unique claim number generated by the system
+          example: "CLM-ABC12345"
+        claimantId:
+          type: string
+          format: uuid
+          description: ID of the claimant
+          example: 550e8400-e29b-41d4-a716-446655440000
+        claimType:
+          $ref: '#/components/schemas/ClaimType'
+        status:
+          $ref: '#/components/schemas/ClaimStatus'
+        description:
+          type: string
+          description: Description of the claim
+          example: "Car accident on Main Street involving two vehicles"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the claim was created
+          example: "2024-01-15T10:30:00"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the claim was last updated
+          example: "2024-01-15T10:30:00"
+      description: Response payload containing claim details
+
+    ClaimEntity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the claim
+          example: 660e8400-e29b-41d4-a716-446655440000
+        claimNumber:
+          type: string
+          description: Unique claim number generated by the system
+          example: "CLM-ABC12345"
+        claimantId:
+          type: string
+          format: uuid
+          description: ID of the claimant
+          example: 550e8400-e29b-41d4-a716-446655440000
+        claimType:
+          $ref: '#/components/schemas/ClaimType'
+        status:
+          $ref: '#/components/schemas/ClaimStatus'
+        description:
+          type: string
+          description: Description of the claim
+          example: "Car accident on Main Street involving two vehicles"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the claim was created
+          example: "2024-01-15T10:30:00"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the claim was last updated
+          example: "2024-01-15T10:30:00"
+        version:
+          type: integer
+          format: int64
+          description: Version number for optimistic locking
+          example: 1
+      description: Full Claim entity with all properties
+
+    ClaimType:
+      type: string
+      enum:
+        - MOTOR
+        - PROPERTY
+      description: |-
+        Type of insurance claim
+        - MOTOR: Motor vehicle insurance claim
+        - PROPERTY: Property damage insurance claim
+      example: MOTOR
+
+    ClaimStatus:
+      type: string
+      enum:
+        - SUBMITTED
+        - ASSIGNED
+        - ASSESSMENT_IN_PROGRESS
+        - MORE_INFO_REQUESTED
+        - APPROVED
+        - REJECTED
+        - SETTLEMENT_IN_PROGRESS
+        - CLOSED
+      description: |-
+        Current status of the claim in its lifecycle
+        - SUBMITTED: Initial claim submission
+        - ASSIGNED: Claim assigned to staff member
+        - ASSESSMENT_IN_PROGRESS: Under assessment
+        - MORE_INFO_REQUESTED: Awaiting additional information
+        - APPROVED: Claim approved
+        - REJECTED: Claim rejected
+        - SETTLEMENT_IN_PROGRESS: Settlement being processed
+        - CLOSED: Claim closed
+      example: SUBMITTED
+
+    WorkloadSummary:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ClaimStatus'
+        count:
+          type: integer
+          format: int64
+          description: Number of claims in this status
+          example: 15
+      description: Workload summary grouped by claim status
+
+    ApiResponseClaimant:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the operation was successful
+          example: true
+        data:
+          $ref: '#/components/schemas/Claimant'
+        message:
+          type: string
+          description: Response message
+          example: "Claimant created successfully"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the response
+          example: "2024-01-15T10:30:00.000Z"
+      description: API response wrapper for Claimant data
+
+    ApiResponseClaimResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the operation was successful
+          example: true
+        data:
+          $ref: '#/components/schemas/ClaimResponse'
+        message:
+          type: string
+          description: Response message
+          example: "Claim created successfully"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the response
+          example: "2024-01-15T10:30:00.000Z"
+      description: API response wrapper for ClaimResponse data
+
+    ApiResponseClaimEntity:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the operation was successful
+          example: true
+        data:
+          $ref: '#/components/schemas/ClaimEntity'
+        message:
+          type: string
+          description: Response message
+          example: "Claim assigned successfully"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the response
+          example: "2024-01-15T11:00:00.000Z"
+      description: API response wrapper for Claim entity data
+
+    ApiResponseClaimResponseList:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the operation was successful
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimResponse'
+          description: List of claims
+        message:
+          type: string
+          description: Response message
+          example: "OK"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the response
+          example: "2024-01-15T10:30:00.000Z"
+      description: API response wrapper for list of ClaimResponse data
+
+    ApiResponseWorkloadSummaryList:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the operation was successful
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkloadSummary'
+          description: List of workload summaries by claim status
+        message:
+          type: string
+          description: Response message
+          example: "OK"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the response
+          example: "2024-01-15T10:30:00.000Z"
+      description: API response wrapper for WorkloadSummary list
+
+    ApiResponseError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the operation was successful
+          example: false
+        data:
+          type: 'null'
+          description: No data in error response
+        message:
+          type: string
+          description: Error message
+          example: "Resource not found"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the response
+          example: "2024-01-15T10:30:00.000Z"
+      description: API response wrapper for error responses
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+
+    Conflict:
+      description: Conflict - resource already exists or state is invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'

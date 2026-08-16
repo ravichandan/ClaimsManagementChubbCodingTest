@@ -165,15 +165,35 @@ These events can be published to Kafka or an equivalent messaging layer, which k
 For this coding test, the intended stack is:
 - Java with Spring Boot
 - H2 for local development and testing
-- Embedded Kafka for asynchronous messaging
+- Embedded in-memory MQ (ActiveMQ) for local/no-Docker messaging during development and coding exercises
 
 This keeps the setup lightweight and quick while still allowing the application design to reflect a realistic event-driven backend.
 
-For production, the system would likely use:
+For production, the system will switch to:
 - a relational database such as PostgreSQL or MySQL,
-- a Kafka cluster,
+- a Kafka cluster for event streaming and integration,
 - Redis for caching or short-lived operational data when needed,
 - stronger observability and monitoring.
+
+## Local Access URLs
+
+### Run locally
+```bash
+./gradlew bootRun
+```
+
+Then open:
+
+### Swagger UI
+- http://localhost:8080/swagger-ui.html
+- http://localhost:8080/api-docs
+
+### Actuator
+- http://localhost:8080/actuator
+- http://localhost:8080/actuator/health
+- http://localhost:8080/actuator/metrics
+
+These endpoints are available when the application is running locally in the default Spring Boot profile.
 
 ## Suggested Multi-Module Structure
 
