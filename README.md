@@ -115,7 +115,7 @@ For Workload
 - Notification to finance & legal teams
 
 
-I am using the following stack - Java with SPring boot 
+I am using the following stack - Java with SPring boot, H2, embedded kafka as this is for a simple coding test and I dont want to waste time in configuring db, etc. But for production I will use a RDBMS database and kafka cluster, and a redis cache wherever necessary
 
 ### Mental map of controllers and services in this multi-module project
 
