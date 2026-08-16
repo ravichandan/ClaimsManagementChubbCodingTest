@@ -7,9 +7,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record ClaimResponse(
-        UUID id,
         String claimNumber,
-        UUID claimantId,
+        String claimantMemberNumber,
         ClaimType claimType,
         ClaimStatus status,
         String description,

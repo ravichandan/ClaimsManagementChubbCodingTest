@@ -31,6 +31,7 @@ class ClaimControllerIntegrationTest {
     @Test
     void shouldCreateClaim() throws Exception {
         Claimant claimant = new Claimant();
+        claimant.setClaimantMemberNumber("CM-TEST-" + UUID.randomUUID());
         claimant.setFirstName("Jane");
         claimant.setLastName("Doe");
         claimant.setEmail("jane.doe@example.com");
@@ -40,7 +41,7 @@ class ClaimControllerIntegrationTest {
         Claimant savedClaimant = claimantRepository.save(claimant);
 
         Map<String, Object> payload = Map.of(
-                "claimantId", savedClaimant.getId().toString(),
+                "claimantMemberNumber", savedClaimant.getClaimantMemberNumber(),
                 "claimType", "MOTOR",
                 "description", "Rear bumper damage after collision"
         );

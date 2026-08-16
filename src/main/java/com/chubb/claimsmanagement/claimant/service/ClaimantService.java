@@ -19,6 +19,7 @@ public class ClaimantService {
 
     public Claimant createClaimant(CreateClaimantRequest request) {
         Claimant claimant = new Claimant();
+        claimant.setClaimantMemberNumber(request.claimantMemberNumber());
         claimant.setFirstName(request.firstName());
         claimant.setLastName(request.lastName());
         claimant.setEmail(request.email());
@@ -31,5 +32,10 @@ public class ClaimantService {
     public Claimant getClaimant(UUID id) {
         return claimantRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Claimant not found: " + id));
+    }
+
+    public Claimant getClaimantByMemberNumber(String claimantMemberNumber) {
+        return claimantRepository.findByClaimantMemberNumber(claimantMemberNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Claimant not found: " + claimantMemberNumber));
     }
 }

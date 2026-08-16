@@ -29,13 +29,14 @@ public class ClaimController {
                 .body(ApiResponse.success(response, "Claim created successfully"));
     }
 
-    @GetMapping("/claims/{claimId}")
-    public ResponseEntity<ApiResponse<ClaimResponse>> getClaim(@PathVariable UUID claimId) {
-        return ResponseEntity.ok(ApiResponse.success(claimService.getClaim(claimId)));
+    @GetMapping("/claims/{claimNumber}")
+    public ResponseEntity<ApiResponse<ClaimResponse>> getClaim(@PathVariable String claimNumber) {
+        return ResponseEntity.ok(ApiResponse.success(claimService.getClaimByNumber(claimNumber)));
     }
 
     @GetMapping("/claims")
-    public ResponseEntity<ApiResponse<List<ClaimResponse>>> getClaimsByClaimant(@RequestParam UUID claimantId) {
-        return ResponseEntity.ok(ApiResponse.success(claimService.getClaimsByClaimant(claimantId)));
+    public ResponseEntity<ApiResponse<List<ClaimResponse>>> getClaimsByClaimant(
+            @RequestParam String claimantMemberNumber) {
+        return ResponseEntity.ok(ApiResponse.success(claimService.getClaimsByClaimantMemberNumber(claimantMemberNumber)));
     }
 }

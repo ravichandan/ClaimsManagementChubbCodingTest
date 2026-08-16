@@ -53,6 +53,7 @@ paths:
             examples:
               default:
                 value:
+                  claimantMemberNumber: "CM-1001"
                   firstName: John
                   lastName: Doe
                   email: john.doe@example.com
@@ -72,6 +73,7 @@ paths:
                     success: true
                     data:
                       id: 550e8400-e29b-41d4-a716-446655440000
+                      claimantMemberNumber: "CM-1001"
                       firstName: John
                       lastName: Doe
                       email: john.doe@example.com
@@ -139,12 +141,12 @@ paths:
             examples:
               motor:
                 value:
-                  claimantId: 550e8400-e29b-41d4-a716-446655440000
+                  claimantMemberNumber: "CM-1001"
                   claimType: MOTOR
                   description: Car accident on Main Street involving two vehicles
               property:
                 value:
-                  claimantId: 550e8400-e29b-41d4-a716-446655440001
+                  claimantMemberNumber: "CM-1002"
                   claimType: PROPERTY
                   description: Water damage to kitchen from burst pipe
       responses:
@@ -159,9 +161,8 @@ paths:
                   value:
                     success: true
                     data:
-                      id: 660e8400-e29b-41d4-a716-446655440000
                       claimNumber: "CLM-ABC12345"
-                      claimantId: 550e8400-e29b-41d4-a716-446655440000
+                      claimantMemberNumber: "CM-1001"
                       claimType: MOTOR
                       status: SUBMITTED
                       description: Car accident on Main Street involving two vehicles
@@ -186,17 +187,24 @@ paths:
       tags:
         - Claims
       summary: Get claims by claimant
-      description: Retrieve all claims for a specific claimant
+      description: Retrieve all claims for a specific claimant by internal ID or member number
       operationId: getClaimsByClaimant
       parameters:
         - name: claimantId
           in: query
-          required: true
+          required: false
           schema:
             type: string
             format: uuid
-          description: Claimant ID to filter claims
+          description: Internal claimant ID to filter claims
           example: 550e8400-e29b-41d4-a716-446655440000
+        - name: claimantMemberNumber
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Claimant member number to filter claims
+          example: CM-1001
       responses:
         '200':
           description: List of claims retrieved successfully
@@ -209,17 +217,15 @@ paths:
                   value:
                     success: true
                     data:
-                      - id: 660e8400-e29b-41d4-a716-446655440000
-                        claimNumber: "CLM-ABC12345"
-                        claimantId: 550e8400-e29b-41d4-a716-446655440000
+                      - claimNumber: "CLM-ABC12345"
+                        claimantMemberNumber: "CM-1001"
                         claimType: MOTOR
                         status: SUBMITTED
                         description: Car accident on Main Street
                         createdAt: "2024-01-15T10:30:00"
                         updatedAt: "2024-01-15T10:30:00"
-                      - id: 660e8400-e29b-41d4-a716-446655440001
-                        claimNumber: "CLM-DEF67890"
-                        claimantId: 550e8400-e29b-41d4-a716-446655440000
+                      - claimNumber: "CLM-DEF67890"
+                        claimantMemberNumber: "CM-1001"
                         claimType: PROPERTY
                         status: ASSIGNED
                         description: Water damage to kitchen
@@ -234,22 +240,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponseError'
 
-  /api/v1/claims/{claimId}:
+  /api/v1/claims/{claimNumber}:
     get:
       tags:
         - Claims
-      summary: Get claim by ID
-      description: Retrieve a specific claim's details
+      summary: Get claim by claim number
+      description: Retrieve a specific claim's details using the generated claim number
       operationId: getClaim
       parameters:
-        - name: claimId
+        - name: claimNumber
           in: path
           required: true
           schema:
             type: string
-            format: uuid
-          description: Claim ID
-          example: 660e8400-e29b-41d4-a716-446655440000
+          description: Customer-facing claim number
+          example: CLM-ABC12345
       responses:
         '200':
           description: Claim found
@@ -262,9 +267,8 @@ paths:
                   value:
                     success: true
                     data:
-                      id: 660e8400-e29b-41d4-a716-446655440000
                       claimNumber: "CLM-ABC12345"
-                      claimantId: 550e8400-e29b-41d4-a716-446655440000
+                      claimantMemberNumber: "CM-1001"
                       claimType: MOTOR
                       status: SUBMITTED
                       description: Car accident on Main Street involving two vehicles
@@ -318,6 +322,7 @@ paths:
                       id: 660e8400-e29b-41d4-a716-446655440000
                       claimNumber: "CLM-ABC12345"
                       claimantId: 550e8400-e29b-41d4-a716-446655440000
+                      claimantMemberNumber: "CM-1001"
                       claimType: MOTOR
                       status: ASSIGNED
                       description: Car accident on Main Street involving two vehicles
@@ -381,6 +386,7 @@ components:
     CreateClaimantRequest:
       type: object
       required:
+        - claimantMemberNumber
         - firstName
         - lastName
         - email
@@ -388,6 +394,11 @@ components:
         - address
         - policyNumber
       properties:
+        claimantMemberNumber:
+          type: string
+          minLength: 1
+          description: Customer-facing claimant member number used for lookups and tracking
+          example: CM-1001
         firstName:
           type: string
           minLength: 1
@@ -428,6 +439,10 @@ components:
           format: uuid
           description: Unique identifier for the claimant
           example: 550e8400-e29b-41d4-a716-446655440000
+        claimantMemberNumber:
+          type: string
+          description: Customer-facing claimant member number
+          example: CM-1001
         firstName:
           type: string
           description: First name of the claimant
@@ -458,15 +473,14 @@ components:
     CreateClaimRequest:
       type: object
       required:
-        - claimantId
+        - claimantMemberNumber
         - claimType
         - description
       properties:
-        claimantId:
+        claimantMemberNumber:
           type: string
-          format: uuid
-          description: ID of the claimant submitting the claim
-          example: 550e8400-e29b-41d4-a716-446655440000
+          description: Claimant member number used to identify the claimant.
+          example: CM-1001
         claimType:
           $ref: '#/components/schemas/ClaimType'
         description:
@@ -479,20 +493,14 @@ components:
     ClaimResponse:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          description: Unique identifier for the claim
-          example: 660e8400-e29b-41d4-a716-446655440000
         claimNumber:
           type: string
           description: Unique claim number generated by the system
           example: "CLM-ABC12345"
-        claimantId:
+        claimantMemberNumber:
           type: string
-          format: uuid
-          description: ID of the claimant
-          example: 550e8400-e29b-41d4-a716-446655440000
+          description: Claimant member number used for customer-facing tracking
+          example: CM-1001
         claimType:
           $ref: '#/components/schemas/ClaimType'
         status:
@@ -516,20 +524,14 @@ components:
     ClaimEntity:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          description: Unique identifier for the claim
-          example: 660e8400-e29b-41d4-a716-446655440000
         claimNumber:
           type: string
           description: Unique claim number generated by the system
           example: "CLM-ABC12345"
-        claimantId:
+        claimantMemberNumber:
           type: string
-          format: uuid
-          description: ID of the claimant
-          example: 550e8400-e29b-41d4-a716-446655440000
+          description: Claimant member number used for customer-facing tracking
+          example: CM-1001
         claimType:
           $ref: '#/components/schemas/ClaimType'
         status:

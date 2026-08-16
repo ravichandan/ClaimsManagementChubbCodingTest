@@ -25,8 +25,8 @@ public class ClaimService {
     }
 
     public ClaimResponse createClaim(CreateClaimRequest request) {
-        Claimant claimant = claimantRepository.findById(request.claimantId())
-                .orElseThrow(() -> new ResourceNotFoundException("Claimant not found: " + request.claimantId()));
+        Claimant claimant = claimantRepository.findByClaimantMemberNumber(request.claimantMemberNumber())
+                .orElseThrow(() -> new ResourceNotFoundException("Claimant not found: " + request.claimantMemberNumber()));
 
         Claim claim = new Claim();
         claim.setClaimant(claimant);
@@ -45,8 +45,17 @@ public class ClaimService {
                 .orElseThrow(() -> new ResourceNotFoundException("Claim not found: " + claimId));
     }
 
-    public List<ClaimResponse> getClaimsByClaimant(UUID claimantId) {
-        return claimRepository.findByClaimantId(claimantId)
+    public ClaimResponse getClaimByNumber(String claimNumber) {
+        return claimRepository.findByClaimNumber(claimNumber)
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Claim not found: " + claimNumber));
+    }
+
+    public List<ClaimResponse> getClaimsByClaimantMemberNumber(String claimantMemberNumber) {
+        Claimant claimant = claimantRepository.findByClaimantMemberNumber(claimantMemberNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Claimant not found: " + claimantMemberNumber));
+
+        return claimRepository.findByClaimantId(claimant.getId())
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -54,9 +63,8 @@ public class ClaimService {
 
     private ClaimResponse toResponse(Claim claim) {
         return new ClaimResponse(
-                claim.getId(),
                 claim.getClaimNumber(),
-                claim.getClaimant().getId(),
+                claim.getClaimant().getClaimantMemberNumber(),
                 claim.getClaimType(),
                 claim.getStatus(),
                 claim.getDescription(),

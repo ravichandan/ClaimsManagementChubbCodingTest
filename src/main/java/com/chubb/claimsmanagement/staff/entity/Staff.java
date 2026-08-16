@@ -1,30 +1,25 @@
-package com.chubb.claimsmanagement.claimant.entity;
+package com.chubb.claimsmanagement.staff.entity;
 
-import com.chubb.claimsmanagement.claim.entity.Claim;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "claimants")
+@Table(name = "staff")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Claimant {
+public class Staff {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-
-    @Column(nullable = false, unique = true)
-    private String claimantMemberNumber;
 
     @Column(nullable = false)
     private String firstName;
@@ -39,11 +34,13 @@ public class Claimant {
     private String phone;
 
     @Column(nullable = false)
-    private String address;
+    private String role;
 
     @Column(nullable = false)
-    private String policyNumber;
+    private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "claimant", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Claim> claims = new ArrayList<>();
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }
