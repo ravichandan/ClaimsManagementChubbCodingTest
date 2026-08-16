@@ -1,133 +1,214 @@
 # ClaimsManagementChubbCodingTest
 
-**Coding test**
+## Coding Test
 
-This gradle project is used to do claims management for all the six markets of Chubb
+This Gradle project is intended to support claims management across six Chubb markets in APAC.
 
-## Business problem
+## Business Problem
 
-Chubb APAC processes motor and property claims across six markets. Today the process is fragmented: claimants submit by phone or email and wait with no visibility into what is happening. Claims staff manage incoming work from shared inboxes and spreadsheets, with no consolidated view of their workload. Managers have no real-time picture of outstanding claims or liability exposure.
+Chubb APAC processes motor and property claims across six markets. The current process is fragmented and largely manual. Claimants often submit incidents by phone or email and then have no clear visibility into the status of their claim. Claims staff work from shared inboxes and spreadsheets, which means there is no unified view of workloads, assignment, or processing progress. Managers also lack a real-time view of outstanding claims, team performance, and potential liability exposure.
 
+The goal is to design and build the backend that powers this platform.
 
-Your task is to design and build the backend that powers this platform.
+Claimants need to be able to:
+- report an incident,
+- track the status of their claim,
+- provide additional information when requested,
+- receive decisions and notifications.
 
-**Claimants** need to be able to report an incident, track their claim, provide additional information when asked, and receive decisions.
+Claims staff need to be able to:
+- receive and triage incoming claims,
+- assign claims to themselves or to other team members,
+- review and assess claims,
+- approve, reject, or request more information,
+- progress approved claims toward settlement,
+- monitor the workload and performance of their team.
 
-**Claims staff** need to be able to pick up incoming claims, review and assess them, progress claims to settlement or rejection, and see their team's workload and performance.
+The frontend is out of scope. The assessment focuses on the backend structure, domain model, API boundaries, workflow design, and communication patterns required to support the full claims lifecycle.
 
-The frontend is out of scope. What the backend needs to be — its structure, its boundaries, its data model, and how it communicates — is part of the assessment.
+## Architecture
 
+### Assumptions, Constraints, Brainstorming, and Decisions
 
+The business process can be broken down into a few clear areas:
 
-## Architecture 
+- Claimants can submit a claim via a REST API.
+- Claimants can check claim status and view claim details.
+- Claimants can provide additional information when the claim is pending more information.
+- Claimants receive notifications when a claim status changes.
+- Claims staff can triage incoming claims and assign them to an adjuster.
+- Claims staff can review and assess each claim based on business rules and supporting information.
+- Claims may be approved, rejected, or placed into a more-information workflow.
+- Approved claims may proceed to settlement, which may require downstream finance or legal processing.
+- Managers need summary views of outstanding claims and team workload.
 
-### Assumptions, Constraints, Brain storiming, Decisions,
-Claimants need to be able to some actions. lets break it down 
- - report incident -> need a rest endpoint something like POST /api/v1/claims
-- track their claim -> a rest endpoint like GET /api/v1/claims
-- provide additional info -> an endpoint like PUT /api/v1/claims
-- receive decisions -> may be a email/sms notification?
+### Domain Model
 
-Claims staff need to be able to some actions. lets break it down 
-- pickup incoming claims -> means there is a list of 'pending' claims and an officer should be able to assign to themselves. So a potential 'queue' where incoming claims are stored and also a rest endpoint like POST /claims/assignments to assign to a staff manually
-- review and assess them -> May be a set of business rules and validations to be performed. means they could also changes to rules and validations based on customers, so need to keep them devoupled. also mostly 'assess' means a manual task, so when it is done, they put the result in a different queue for next process. 
-- progress claims to settlement or rejection - means when a settlement is progressed, it is sent to finance team to do the finance & legal transactions and also notify customer in email. same thing for rejection also but no finance team involved. If in case finance and legal teams are to be notified, again we expect an endpoint or queue, based on async or sync decisions. I think as the customer dont see this, there could be async process but again need to check with business about the ETAs.
-- see their team's workload and performance -> means a manager or admin can have a UI dashboard to see the # of claims and their statuses. So endpoints for this GET /api/v1/management/claims gives all the claims and statuses, etc.
-
-
-### Entities
-Listing down potential entities
 #### Claim
-- Id:  UUID
+- id: UUID
 - version: int
 - status: ClaimStatus
-- name: string
-- crated_at: Date
-- modified_at: DAte
-- claimNumber: UUID
+- type: ClaimType
+- claimantId: UUID
+- claimNumber: String
 - description: String
+- createdAt: Date
+- updatedAt: Date
 
 #### Claimant
 - id: UUID
-- name: String
+- firstName: String
+- lastName: String
 - email: String
 - phone: String
 - address: String
-- policyNumber: UUID // potential foreign key of insurance policy number
+- policyNumber: String
 
 #### ClaimHistory
 - id: UUID
-- claimId: UUIUD
-- status: string
+- claimId: UUID
+- status: String
+- changedBy: String
+- changeReason: String
 - createdAt: Date
 
 #### Assessment
-- id: String
-- claimId: String
-- staffId: string
+- id: UUID
+- claimId: UUID
+- staffId: UUID
 - type: String
 - description: String
 - details: String
-- estimatedAmount: double
-- settledAmount; double
+- estimatedAmount: Double
+- settledAmount: Double
 - createdAt: Date
-- claimStatus: ClaimSTatus
-- result: MORE_INFO/CLOSED
+- result: AssessmentResult
 
+#### ClaimStatus Enum
+- SUBMITTED
+- ASSIGNED
+- ASSESSMENT_IN_PROGRESS
+- MORE_INFO_REQUESTED
+- APPROVED
+- REJECTED
+- SETTLEMENT_IN_PROGRESS
+- CLOSED
 
-#### ClaimStatus: ENUM
-SUMITTED, ASSIGNED,ASSESSMENT_INPROGRESS,APPROVED,REJECTED,SETTLEMENT_INPROGRESS,CLOSED
+#### AssessmentResult Enum
+- APPROVED
+- REJECTED
+- MORE_INFO_REQUIRED
 
-#### Claim Lifecycle
-APPROVED PATH:
+### Claim Lifecycle
 
-SUBMITTED->ASSIGNED->ASSEMENT_INPROGRESS->APPROVED->SETTLEMENT_INPROGRESS->CLOSED
+Approved path:
 
-MORE INFO PATH:
+SUBMITTED -> ASSIGNED -> ASSESSMENT_IN_PROGRESS -> APPROVED -> SETTLEMENT_IN_PROGRESS -> CLOSED
 
-SUBMITTED->ASSIGNED->ASSEMENT_INPROGRESS->MORE_INFO_REQUESTED*->SETTLEMENT_INPROGRESS/REJECTED->CLOSED
+More information path:
 
+SUBMITTED -> ASSIGNED -> ASSESSMENT_IN_PROGRESS -> MORE_INFO_REQUESTED -> (additional info provided) -> APPROVED/REJECTED
 
-REJECTED PATH:
+Rejected path:
 
-SUBMITTED->ASSIGNED->ASSEMENT_INPROGRESS->REJECTED
+SUBMITTED -> ASSIGNED -> ASSESSMENT_IN_PROGRESS -> REJECTED
 
+This keeps the lifecycle readable and reflects the manual review nature of the process.
 
-### Sync operations (REST Endpoints)
-<p>POST /api/v1/claims</p>
-<p>GET  /api/v1/claims/{claimId}</p>
-<p>PUT /api/v1/claims/{claimId}
+## Synchronous Operations (REST APIs)
 
-<p>POST /api/v1/claims/{claimId}/assessments</p>
-<p>GET  /api/v1/claims/{claimId}/assessments</p>
+### Claimant-facing APIs
+- POST /api/v1/claims
+- GET /api/v1/claims/{claimId}
+- PUT /api/v1/claims/{claimId}
+- GET /api/v1/claims
 
+### Claims assessment APIs
+- POST /api/v1/claims/{claimId}/assignments
+- POST /api/v1/claims/{claimId}/assessments
+- GET /api/v1/claims/{claimId}/assessments
+- POST /api/v1/claims/{claimId}/decisions
+- POST /api/v1/claims/{claimId}/settlements
 
-For Workload
-<p>GET /api/v1/management/claims/p>
-<p>GET /api/v1/management/claims/p>
-<p>GET /api/v1/staff/{staffId}/claims</p>
+### Workload and management APIs
+- GET /api/v1/management/claims
+- GET /api/v1/management/claims?status={status}
+- GET /api/v1/staff/{staffId}/claims
 
+These endpoints support the basic user journeys and the operational needs of claims teams and managers.
 
-#### Async operations
-- Assigning a Submitted claim
-- Assigning a 'MORE_INFO_REQUESTED' claim
-- Notification (Email/sms) to Customer for 'MORE_INFO_REQUESTED/APPROVED/REJECTED/SETTLED' claims
-- Notification to finance & legal teams
+## Asynchronous Operations
 
+The following should be treated as asynchronous workflow events rather than synchronous user actions:
 
-I am using the following stack - Java with SPring boot, H2, embedded kafka as this is for a simple coding test and I dont want to waste time in configuring db, etc. But for production I will use a RDBMS database and kafka cluster, and a redis cache wherever necessary
+- Assigning an incoming claim to a staff member
+- Reassigning a claim after it is returned for more information
+- Sending email or SMS notifications to claimants
+- Triggering downstream finance and legal workflows
+- Updating dashboards and workload metrics after state changes
+- Recording claim lifecycle events for audit and reporting
 
-### Mental map of controllers and services in this multi-module project
+Examples of events:
+- ClaimSubmitted
+- ClaimAssigned
+- AssessmentCompleted
+- MoreInfoRequested
+- ClaimApproved
+- ClaimRejected
+- SettlementStarted
+- NotificationSent
+
+These events can be published to Kafka or an equivalent messaging layer, which keeps the system decoupled and easier to extend.
+
+## Technology Choices
+
+For this coding test, the intended stack is:
+- Java with Spring Boot
+- H2 for local development and testing
+- Embedded Kafka for asynchronous messaging
+
+This keeps the setup lightweight and quick while still allowing the application design to reflect a realistic event-driven backend.
+
+For production, the system would likely use:
+- a relational database such as PostgreSQL or MySQL,
+- a Kafka cluster,
+- Redis for caching or short-lived operational data when needed,
+- stronger observability and monitoring.
+
+## Suggested Multi-Module Structure
+
+A sensible project structure for this backend would be:
 
 - Claims Module
+  - claim creation, retrieval, updates, and status transitions
 - Claimant Module
+  - claimant profile and claim relationship management
 - Assessment Module
-- workload Module
+  - assessment creation, review, and validation logic
+- Workload Module
+  - dashboards, staffing, and team-performance metrics
+- Shared/Common Module
+  - events
+  - messaging
+  - exceptions
+  - configuration
+  - validation utilities
 
-The following will be common components and shared across
-- events
-- messaging
-- exceptions
-- config  
+## Areas to Consider Further
 
-##
+The following are important to include in the design even if they are not fully implemented in the coding test:
+
+- Role-based access control
+- Audit logging
+- Claim search and filtering
+- Notification delivery tracking and retries
+- Handling multiple claim documents and attachments
+- Idempotent API behaviour
+- Concurrency control when claims are assigned or updated
+- Validation and domain rules for claim types
+- Dashboard metrics such as queue length, SLA breaches, and throughput
+
+## Summary
+
+The overall problem is a backend design for a claims management platform that supports both claimant-facing self-service and internal operational workflows. The core challenge is to model claim lifecycle transitions clearly, expose the right REST APIs, and use asynchronous events for downstream actions such as notifications and finance/legal processing.
+
