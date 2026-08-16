@@ -117,6 +117,17 @@ For Workload
 
 I am using the following stack - Java with SPring boot 
 
-## 
+### Mental map of controllers and services in this multi-module project
+
+- Claims Module
+- Claimant Module
+- Assessment Module
+- workload Module
+
+The following will be common components and shared across
+- events
+- messaging
+- exceptions
+- config  
 
 ##
