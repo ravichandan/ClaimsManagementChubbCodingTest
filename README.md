@@ -364,6 +364,9 @@ The following items are planned upgrades. They are intentionally listed separate
 - Add timeouts, circuit breakers, bulkheads, and bounded thread pools around external services.
 - Test recovery from broker, database, SMTP, and downstream finance failures.
 - Define capacity targets and load-test claim submission, pickup, assessment, and workload reporting.
+- Split read and write workloads so each can scale independently: route claim submissions, assignments, and assessment decisions to a primary write datasource, and route status lookups, claim history, and workload/management reporting to read replicas via a routing datasource (or separate read/write Spring profiles).
+- Size and scale read replicas separately from the write instance based on reporting/query load, and scale the write path separately based on claim intake and workflow throughput.
+- Ensure read replicas tolerate replication lag for reporting endpoints, and require read-after-write consistency (reads from the primary) only where staff/claimant actions immediately depend on the latest state.
 
 ## Summary
 
